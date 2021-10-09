@@ -1,0 +1,6 @@
+[submodule "cairo"]
+	path = cairo
+	url = https://github.com/freedesktop/cairo
+[submodule "pango"]
+	path = pango
+	url = https://github.com/GNOME/pango
