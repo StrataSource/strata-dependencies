@@ -14,6 +14,9 @@ if [ ! -z $RUNNING_ALPINE ]; then
 	apk add git autoconf make cmake automake libtool bzip2-static bzip2-dev brotli-dev brotli-static
 fi
 
+INCDIR="$PWD/install/include"
+LIBDIR="$PWD/install/lib"
+
 #------------------------#
 # Build libz
 #------------------------#
@@ -80,23 +83,24 @@ popd > /dev/null
 #------------------------#
 
 
+# Uncomment me when libxml2 is required, if ever!
 #------------------------#
 # Build libxml2
 #------------------------#
-pushd libxml2 > /dev/null
-
-export CFLAGS="-fPIC"
-
+#pushd libxml2 > /dev/null
+#
+#export CFLAGS="-fPIC"
+#
 # Make sure we do not pull anything in, fontconfig needs to do that!
-export Z_LIBS=""
-export LZMA_LIBS=""
-export ICU_LIBS=""
-
+#export Z_LIBS=""
+#export LZMA_LIBS=""
+#export ICU_LIBS=""
+#
 # Why does libxml2 have python bindings??
-./autogen.sh --prefix="$PWD/../install" --enable-static --without-icu --enable-shared=no --without-python
-make install -j$(nproc)
-
-popd > /dev/null
+#./autogen.sh --prefix="$PWD/../install" --enable-static --without-icu --enable-shared=no --without-python
+#make install -j$(nproc)
+#
+#popd > /dev/null
 #------------------------#
 
 #------------------------#
@@ -108,6 +112,26 @@ pushd libexpat/expat > /dev/null
 export CFLAGS="-fPIC"
 
 ./configure --enable-static --enable-shared=no --prefix="$PWD/../../install"
+make install -j$(nproc)
+
+popd > /dev/null
+#------------------------#
+
+#------------------------#
+# Build fontconfig
+#------------------------#
+pushd fontconfig > /dev/null
+
+# Override pkgconfig stuff
+export CFLAGS="-fPIC -I$INCDIR"
+export FREETYPE_CFLAGS="-I$INCDIR/freetype2 -I$INCDIR/freetype2/freetype"
+export FREETYPE_LIBS="-L$LIBDIR -lfreetype"
+export EXPAT_CFLAGS=""
+export EXPAT_LIBS="$LIBDIR/libexpat.a"
+export JSONC_CFLAGS="-I$INCDIR/json-c"
+export JSONC_LIBS="$LIBDIR/libjson-c.a"
+
+./autogen.sh --enable-static=no --prefix="$PWD/../install" --with-expat="$PWD/../install" 
 make install -j$(nproc)
 
 popd > /dev/null
