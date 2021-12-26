@@ -81,12 +81,32 @@ popd > /dev/null
 
 
 #------------------------#
+# Build libxml2
+#------------------------#
+pushd libxml2 > /dev/null
+
+export CFLAGS="-fPIC"
+
+# Make sure we do not pull anything in, fontconfig needs to do that!
+export Z_LIBS=""
+export LZMA_LIBS=""
+export ICU_LIBS=""
+
+# Why does libxml2 have python bindings??
+./autogen.sh --prefix="$PWD/../install" --enable-static --without-icu --enable-shared=no --without-python
+make install -j$(nproc)
+
+popd > /dev/null
+#------------------------#
+
+#------------------------#
 # Build expat
 #------------------------#
 pushd libexpat/expat > /dev/null
 
 ./buildconf.sh
 export CFLAGS="-fPIC"
+
 ./configure --enable-static --enable-shared=no --prefix="$PWD/../../install"
 make install -j$(nproc)
 
