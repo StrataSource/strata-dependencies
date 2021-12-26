@@ -64,6 +64,20 @@ rm -f ../install/lib/libpng*.so*
 popd > /dev/null
 #------------------------#
 
+#------------------------#
+# Build jsonc
+#------------------------#
+pushd json-c > /dev/null
+
+mkdir -p build && cd build
+../cmake-configure --enable-static --prefix="$PWD/../../install"
+make install -j$(nproc)
+
+# Once again, no way to cull shared objects!
+rm -f "$PWD"/../../install/lib/libjson-c*.so*
+
+popd > /dev/null
+#------------------------#
 
 #------------------------#
 # Build freetype
