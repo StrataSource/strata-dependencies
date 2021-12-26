@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-function error {
-	echo "APK exited with non-zero code!" 
-	echo "Make sure you're running this script in alpine!" 
-	exit 1
-}
-
 # Add all of our required libraries 
 if [ ! -z $RUNNING_ALPINE ]; then
 	apk add build-base clang libpng-static libpng-dev expat-static expat-dev zlib-dev zlib-static freetype-dev freetype-static fontconfig-static pixman-static || error
@@ -16,6 +10,21 @@ fi
 
 INCDIR="$PWD/install/include"
 LIBDIR="$PWD/install/lib"
+INSTALLDIR="$PWD/install"
+
+#------------------------#
+# Build gobject, gio, etc
+#------------------------#
+pushd glib > /dev/null
+
+export CFLAGS="-fPIC"
+
+meson build --buildtype release --default-library static --prefix "$INSTALLDIR"
+cd build
+ninja install
+
+popd > /dev/null
+#------------------------#
 
 #------------------------#
 # Build pixman
@@ -23,7 +32,7 @@ LIBDIR="$PWD/install/lib"
 pushd pixman > /dev/null
 
 export CFLAGS="-fPIC"
-./autogen.sh --enable-gtk=no --enable-png=no --enable-shared=no --enable-static --prefix="$PWD/../install"
+./autogen.sh --enable-gtk=no --enable-png=no --enable-shared=no --enable-static --prefix="$INSTALLDIR"
 make install -j$(nproc)
 
 popd > /dev/null
@@ -37,7 +46,7 @@ pushd libmd > /dev/null
 
 export CFLAGS="-fPIC"
 ./autogen
-./configure --prefix="$PWD/../install" --enable-static --enable-shared=no
+./configure --prefix="$INSTALLDIR" --enable-static --enable-shared=no
 make install -j$(nproc)
 
 popd > /dev/null
@@ -50,7 +59,7 @@ popd > /dev/null
 pushd zlib > /dev/null
 
 export CFLAGS="-fPIC"
-./configure --static --64 --prefix="$PWD/../install"
+./configure --static --64 --prefix="$INSTALLDIR"
 make install -j$(nproc)
 
 popd > /dev/null
@@ -61,7 +70,7 @@ popd > /dev/null
 #------------------------#
 pushd bzip2 > /dev/null
 
-make install -j$(nproc) CFLAGS=-fPIC LDFLAGS=-fPIC PREFIX="$PWD/../install"
+make install -j$(nproc) CFLAGS=-fPIC LDFLAGS=-fPIC PREFIX="$INSTALLDIR"
 
 popd > /dev/null
 #------------------------#
@@ -73,7 +82,7 @@ pushd brotli > /dev/null
 
 ./bootstrap
 export CFLAGS="-fPIC"
-./configure --enable-static --disable-shared --prefix="$PWD/../install"
+./configure --enable-static --disable-shared --prefix="$INSTALLDIR"
 make install -j$(nproc)
 
 popd > /dev/null
@@ -85,7 +94,7 @@ popd > /dev/null
 pushd libpng > /dev/null
 
 export CFLAGS="-fPIC"
-./configure --enable-static --disable-shared --prefix="$PWD/../install"
+./configure --enable-static --disable-shared --prefix="$INSTALLDIR"
 make install -j$(nproc)
 
 # --disable-shared does nothing, cool! 
@@ -100,7 +109,7 @@ popd > /dev/null
 pushd json-c > /dev/null
 
 mkdir -p build && cd build
-../cmake-configure --enable-static --prefix="$PWD/../../install" -- -DDISABLE_EXTRA_LIBS=ON -DCMAKE_BUILD_TYPE="Release"
+../cmake-configure --enable-static --prefix="$INSTALLDIR" -- -DDISABLE_EXTRA_LIBS=ON -DCMAKE_BUILD_TYPE="Release"
 make install -j$(nproc)
 
 # Once again, no way to cull shared objects!
@@ -138,7 +147,7 @@ pushd libexpat/expat > /dev/null
 ./buildconf.sh
 export CFLAGS="-fPIC"
 
-./configure --without-docbook --without-examples --without-tests --enable-static --enable-shared=no --prefix="$PWD/../../install"
+./configure --without-docbook --without-examples --without-tests --enable-static --enable-shared=no --prefix="$INSTALLDIR"
 make install -j$(nproc)
 
 popd > /dev/null
@@ -160,7 +169,7 @@ export EXPAT_LIBS="$LIBDIR/libexpat.a"
 export JSONC_CFLAGS="-I$INCDIR/json-c"
 export JSONC_LIBS="$LIBDIR/libjson-c.a"
 
-./autogen.sh --enable-static=no --prefix="$PWD/../install" --with-expat="$PWD/../install" 
+./autogen.sh --enable-static=no --prefix="$INSTALLDIR" --with-expat="$INSTALLDIR" 
 make install -j$(nproc)
 
 popd > /dev/null
@@ -181,7 +190,7 @@ export BROTLI_LIBS="$(realpath ../install/lib/libbrotlidec.a) $(realpath ../inst
 export CFLAGS="-fPIC"
 
 ./autogen.sh
-./configure --with-harfbuzz=no --enable-shared --disable-static --prefix="$PWD/../install"
+./configure --with-harfbuzz=no --enable-shared --disable-static --prefix="$INSTALLDIR"
 make install -j$(nproc)
 
 popd > /dev/null
@@ -200,9 +209,25 @@ export png_LIBS="$LIBDIR/libpng.a"
 export FREETYPE_LIBS="-L$LIBDIR -lfreetype"
 export FONTCONFIG_LIBS="-L$LIBDIR -lfontconfig"
 
-./autogen.sh --enable-xlib=no --enable-xlib-xrender=no --enable-xlib-xcb=no --enable-xcb-shm=no --enable-ft --enable-egl=no --without-x --enable-glx=no --enable-wgl=no --enable-quartz=no --enable-svg=yes --enable-pdf=yes --enable-ps=yes --enable-gobject=no --enable-png --disable-static --prefix="$PWD/../install"
+./autogen.sh --enable-xlib=no --enable-xlib-xrender=no --enable-xlib-xcb=no --enable-xcb-shm=no --enable-ft --enable-egl=no --without-x --enable-glx=no --enable-wgl=no --enable-quartz=no --enable-svg=yes --enable-pdf=yes --enable-ps=yes --enable-gobject=no --enable-png --disable-static --prefix="$INSTALLDIR"
 
 make install -j$(nproc)
+
+popd > /dev/null
+#------------------------#
+
+#------------------------#
+# Build pango
+#------------------------#
+pushd pango > /dev/null
+
+export CFLAGS="-fPIC"
+export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
+export PKG_CONFIG_PATH="$LIBDIR/pkgconfig"
+
+meson build --prefix "$INSTALLDIR" --buildtype release --libdir lib # --pkg-config-path "$LIBDIR/x86_64-linux-gnu/pkgconfig;$LIBDIR/pkgconfig" --build.pkg-config-path "$LIBDIR/x86_64-linux-gnu/pkgconfig;$LIBDIR/pkgconfig"
+cd build
+ninja install
 
 popd > /dev/null
 #------------------------#

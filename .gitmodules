@@ -36,7 +36,10 @@
 	url = https://gitlab.gnome.org/GNOME/libxml2
 [submodule "pixman"]
 	path = pixman
-	url = https://github.com/libpixman/pixman
+	url = https://gitlab.freedesktop.org/pixman/pixman
 [submodule "libmd"]
 	path = libmd
 	url = https://github.com/guillemj/libmd
+[submodule "glib"]
+	path = glib
+	url = https://gitlab.gnome.org/GNOME/glib
