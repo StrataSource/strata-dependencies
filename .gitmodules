@@ -28,3 +28,9 @@
 [submodule "json-c"]
 	path = json-c
 	url = https://github.com/json-c/json-c
+[submodule "libexpat"]
+	path = libexpat
+	url = https://github.com/libexpat/libexpat
+[submodule "libxml2"]
+	path = libxml2
+	url = https://gitlab.gnome.org/GNOME/libxml2

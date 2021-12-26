@@ -70,11 +70,25 @@ popd > /dev/null
 pushd json-c > /dev/null
 
 mkdir -p build && cd build
-../cmake-configure --enable-static --prefix="$PWD/../../install"
+../cmake-configure --enable-static --prefix="$PWD/../../install" -- -DDISABLE_EXTRA_LIBS=ON -DCMAKE_BUILD_TYPE="Release"
 make install -j$(nproc)
 
 # Once again, no way to cull shared objects!
 rm -f "$PWD"/../../install/lib/libjson-c*.so*
+
+popd > /dev/null
+#------------------------#
+
+
+#------------------------#
+# Build expat
+#------------------------#
+pushd libexpat/expat > /dev/null
+
+./buildconf.sh
+export CFLAGS="-fPIC"
+./configure --enable-static --enable-shared=no --prefix="$PWD/../../install"
+make install -j$(nproc)
 
 popd > /dev/null
 #------------------------#
