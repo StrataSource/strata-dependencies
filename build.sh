@@ -17,7 +17,6 @@ fi
 INCDIR="$PWD/install/include"
 LIBDIR="$PWD/install/lib"
 
-
 #------------------------#
 # Build pixman
 #------------------------#
@@ -29,6 +28,21 @@ make install -j$(nproc)
 
 popd > /dev/null
 #------------------------#
+
+
+#------------------------#
+# Build libmd
+#------------------------#
+pushd libmd > /dev/null
+
+export CFLAGS="-fPIC"
+./autogen
+./configure --prefix="$PWD/../install" --enable-static --enable-shared=no
+make install -j$(nproc)
+
+popd > /dev/null
+#------------------------#
+
 
 #------------------------#
 # Build libz
@@ -135,6 +149,8 @@ popd > /dev/null
 #------------------------#
 pushd fontconfig > /dev/null
 
+export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
+
 # Override pkgconfig stuff
 export CFLAGS="-fPIC -I$INCDIR"
 export FREETYPE_CFLAGS="-I$INCDIR/freetype2 -I$INCDIR/freetype2/freetype"
@@ -156,7 +172,7 @@ popd > /dev/null
 pushd freetype > /dev/null
 
 # Setup pkgconfig overrides
-export LDFLAGS="-L$(realpath ../install/lib) -Wl,--no-undefined"
+export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
 export ZLIB_LIBS=""
 export BZIP2_LIBS=""
 # Manually specify link order for png, bz2, zlib and libm to avoid unresolved symbols due to single pass linking
@@ -177,7 +193,7 @@ popd > /dev/null
 pushd cairo > /dev/null
 
 export PKG_CONFIG="pkg-config --static" 
-export LDFLAGS="-fPIC"
+export LDFLAGS="-fPIC -L$LIBDIR -Wl,--no-undefined"
 export CFLAGS="-fPIC"
 export pixman_LIBS="$LIBDIR/libpixman-1.a"
 export png_LIBS="$LIBDIR/libpng.a"
