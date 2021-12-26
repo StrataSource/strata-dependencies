@@ -17,6 +17,19 @@ fi
 INCDIR="$PWD/install/include"
 LIBDIR="$PWD/install/lib"
 
+
+#------------------------#
+# Build pixman
+#------------------------#
+pushd pixman > /dev/null
+
+export CFLAGS="-fPIC"
+./autogen.sh --enable-gtk=no --enable-png=no --enable-shared=no --enable-static --prefix="$PWD/../install"
+make install -j$(nproc)
+
+popd > /dev/null
+#------------------------#
+
 #------------------------#
 # Build libz
 #------------------------#
@@ -111,7 +124,7 @@ pushd libexpat/expat > /dev/null
 ./buildconf.sh
 export CFLAGS="-fPIC"
 
-./configure --enable-static --enable-shared=no --prefix="$PWD/../../install"
+./configure --without-docbook --without-examples --without-tests --enable-static --enable-shared=no --prefix="$PWD/../../install"
 make install -j$(nproc)
 
 popd > /dev/null
@@ -158,22 +171,22 @@ make install -j$(nproc)
 popd > /dev/null
 #------------------------#
 
-exit 1
-
+#------------------------#
 # Build cairo
-#-----------#
-cd cairo #> /dev/null
+#------------------------#
+pushd cairo > /dev/null
 
-export CC=clang 
-export CXX=clang++
 export PKG_CONFIG="pkg-config --static" 
-export LDFLAGS=-static
-export pixman_LIBS="/usr/lib/libpixman-1.a"
-export png_LIBS="/usr/lib/libpng16.a"
+export LDFLAGS="-fPIC"
+export CFLAGS="-fPIC"
+export pixman_LIBS="$LIBDIR/libpixman-1.a"
+export png_LIBS="$LIBDIR/libpng.a"
+export FREETYPE_LIBS="-L$LIBDIR -lfreetype"
+export FONTCONFIG_LIBS="-L$LIBDIR -lfontconfig"
 
-./autogen.sh --enable-xlib=no --enable-xlib-xrender=no --enable-xlib-xcb=no --enable-xcb-shm=no --enable-ft --enable-egl=no --without-x --enable-glx=no --enable-wgl=no --enable-quartz=no --enable-svg=yes --enable-pdf=yes --enable-ps=yes --enable-gobject=no --enable-png --disable-static
+./autogen.sh --enable-xlib=no --enable-xlib-xrender=no --enable-xlib-xcb=no --enable-xcb-shm=no --enable-ft --enable-egl=no --without-x --enable-glx=no --enable-wgl=no --enable-quartz=no --enable-svg=yes --enable-pdf=yes --enable-ps=yes --enable-gobject=no --enable-png --disable-static --prefix="$PWD/../install"
 
-make -j$(nproc) CFLAGS="-fPIC" LDFLAGS="-fPIC"
+make install -j$(nproc)
 
-cd .. #> /dev/null
-#-----------#
+popd > /dev/null
+#------------------------#

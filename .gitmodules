@@ -34,3 +34,9 @@
 [submodule "libxml2"]
 	path = libxml2
 	url = https://gitlab.gnome.org/GNOME/libxml2
+[submodule "pixman"]
+	path = pixman
+	url = https://github.com/libpixman/pixman
+[submodule "libmd"]
+	path = libmd
+	url = https://github.com/guillemj/libmd
