@@ -4,3 +4,21 @@
 [submodule "pango"]
 	path = pango
 	url = https://github.com/GNOME/pango
+[submodule "freetype"]
+	path = freetype
+	url = https://github.com/freetype/freetype
+[submodule "libpng"]
+	path = libpng
+	url = https://github.com/glennrp/libpng
+[submodule "zlib"]
+	path = zlib
+	url = https://github.com/madler/zlib
+[submodule "bzip2"]
+	path = bzip2
+	url = git://sourceware.org/git/bzip2.git
+[submodule "brotli"]
+	path = brotli
+	url = https://github.com/google/brotli
+[submodule "harfbuzz"]
+	path = harfbuzz
+	url = https://github.com/harfbuzz/harfbuzz
