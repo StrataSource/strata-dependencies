@@ -248,10 +248,11 @@ popd > /dev/null
 pushd pango > /dev/null
 
 export CFLAGS="-fPIC"
-export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
+export LDFLAGS="-L$LIBDIR -Wl,--no-undefined -Wl,-Bstatic"
 export PKG_CONFIG_PATH="$LIBDIR/pkgconfig"
 
-# Apply patches
+# When running locally, meson decides to grab cairo-xlib from the system instead of where it SHOULD come from (install/), so we end up with build errors
+# there's no way to fix this as far as I can tell, so patch that stupid behavior out.
 apply-patch ../patches/pango/meson-cairo.patch
 
 MESON_COMMAND=
