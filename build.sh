@@ -29,9 +29,23 @@ pushd glib > /dev/null
 
 export CFLAGS="-fPIC"
 
-meson build --buildtype release --default-library static --prefix "$INSTALLDIR"
+meson build --buildtype release --default-library static --prefix "$INSTALLDIR" --libdir lib
 cd build
 ninja install
+
+popd > /dev/null
+#------------------------#
+
+#------------------------#
+# Build libffi
+#------------------------#
+pushd libffi > /dev/null
+
+export CFLAGS="-fPIC"
+
+./autogen.sh
+./configure --enable-static --enable-shared=no --prefix="$INSTALLDIR"
+make install -j$(nproc)
 
 popd > /dev/null
 #------------------------#
