@@ -1,0 +1,12 @@
+diff --git a/meson.build b/meson.build
+index 6c6fed7c..56dfaf68 100644
+--- a/meson.build
++++ b/meson.build
+@@ -505,7 +505,6 @@ if ['pkgconfig', 'internal'].contains(cairo_found_type)
+     [ 'cairo-png', cairo_req_version, 'HAVE_CAIRO_PNG', 'png', ],
+     [ 'cairo-ps', cairo_req_version, 'HAVE_CAIRO_PS', 'ps', ],
+     [ 'cairo-pdf', cairo_req_version, 'HAVE_CAIRO_PDF', 'pdf', ],
+-    [ 'cairo-xlib', cairo_req_version, 'HAVE_CAIRO_XLIB', 'xlib', ],
+   ]
+ 
+   foreach b: cairo_surface_backends

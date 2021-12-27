@@ -8,6 +8,16 @@ if [ ! -z $RUNNING_ALPINE ]; then
 	apk add git autoconf make cmake automake libtool bzip2-static bzip2-dev brotli-dev brotli-static
 fi
 
+# Applies patch if it does not already exist
+function apply-patch
+{
+	git apply $1 || true # Honestly fuck off, patch really likes doing interactive bullshit and it can kiss my ass. If this breaks, nobody fucking cares
+#	patch -N --dry-run --silent < $1 2> /dev/null
+#	if [ $? -eq 0 ]; then
+#		patch $1
+#	fi
+}
+
 INCDIR="$PWD/install/include"
 LIBDIR="$PWD/install/lib"
 INSTALLDIR="$PWD/install"
@@ -153,27 +163,6 @@ make install -j$(nproc)
 popd > /dev/null
 #------------------------#
 
-#------------------------#
-# Build fontconfig
-#------------------------#
-pushd fontconfig > /dev/null
-
-export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
-
-# Override pkgconfig stuff
-export CFLAGS="-fPIC -I$INCDIR"
-export FREETYPE_CFLAGS="-I$INCDIR/freetype2 -I$INCDIR/freetype2/freetype"
-export FREETYPE_LIBS="-L$LIBDIR -lfreetype"
-export EXPAT_CFLAGS=""
-export EXPAT_LIBS="$LIBDIR/libexpat.a"
-export JSONC_CFLAGS="-I$INCDIR/json-c"
-export JSONC_LIBS="$LIBDIR/libjson-c.a"
-
-./autogen.sh --enable-static=no --prefix="$INSTALLDIR" --with-expat="$INSTALLDIR" 
-make install -j$(nproc)
-
-popd > /dev/null
-#------------------------#
 
 #------------------------#
 # Build freetype
@@ -191,6 +180,29 @@ export CFLAGS="-fPIC"
 
 ./autogen.sh
 ./configure --with-harfbuzz=no --enable-shared --disable-static --prefix="$INSTALLDIR"
+make install -j$(nproc)
+
+popd > /dev/null
+#------------------------#
+
+
+#------------------------#
+# Build fontconfig
+#------------------------#
+pushd fontconfig > /dev/null
+
+export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
+
+# Override pkgconfig stuff
+export CFLAGS="-fPIC -I$INCDIR"
+export FREETYPE_CFLAGS="-I$INCDIR/freetype2 -I$INCDIR/freetype2/freetype"
+export FREETYPE_LIBS="-L$LIBDIR -lfreetype"
+export EXPAT_CFLAGS=""
+export EXPAT_LIBS="$LIBDIR/libexpat.a"
+export JSONC_CFLAGS="-I$INCDIR/json-c"
+export JSONC_LIBS="$LIBDIR/libjson-c.a"
+
+./autogen.sh --enable-static=no --prefix="$INSTALLDIR" --with-expat="$INSTALLDIR" 
 make install -j$(nproc)
 
 popd > /dev/null
@@ -225,7 +237,12 @@ export CFLAGS="-fPIC"
 export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
 export PKG_CONFIG_PATH="$LIBDIR/pkgconfig"
 
-meson build --prefix "$INSTALLDIR" --buildtype release --libdir lib # --pkg-config-path "$LIBDIR/x86_64-linux-gnu/pkgconfig;$LIBDIR/pkgconfig" --build.pkg-config-path "$LIBDIR/x86_64-linux-gnu/pkgconfig;$LIBDIR/pkgconfig"
+# Apply patches
+apply-patch ../patches/pango/meson-cairo.patch
+
+MESON_COMMAND=
+[ -f build ] && MESON_COMMAND="--reconfigure"
+meson $MESON_COMMAND build --prefix "$INSTALLDIR" --buildtype release --libdir lib --pkg-config-path "$LIBDIR/pkgconfig" --build.pkg-config-path "$LIBDIR/pkgconfig"
 cd build
 ninja install
 
