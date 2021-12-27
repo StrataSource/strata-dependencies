@@ -177,27 +177,6 @@ rm -f "$PWD"/../../install/lib/libjson-c*.so*
 popd > /dev/null
 #------------------------#
 
-
-# Uncomment me when libxml2 is required, if ever!
-#------------------------#
-# Build libxml2
-#------------------------#
-#pushd libxml2 > /dev/null
-#
-#export CFLAGS="-fPIC"
-#
-# Make sure we do not pull anything in, fontconfig needs to do that!
-#export Z_LIBS=""
-#export LZMA_LIBS=""
-#export ICU_LIBS=""
-#
-# Why does libxml2 have python bindings??
-#./autogen.sh --prefix="$PWD/../install" --enable-static --without-icu --enable-shared=no --without-python
-#make install -j$(nproc)
-#
-#popd > /dev/null
-#------------------------#
-
 #------------------------#
 # Build expat
 #------------------------#
@@ -278,6 +257,20 @@ popd > /dev/null
 #------------------------#
 
 #------------------------#
+# Build harfbuzz
+#------------------------#
+pushd harfbuzz > /dev/null
+
+export CFLAGS="-fPIC"
+export LDFLAGS="-L$LIBDIR"
+
+./autogen.sh --prefix="$INSTALLDIR" --enable-shared=no --enable-static 
+make install -j$(nproc)
+
+popd > /dev/null
+#------------------------#
+
+#------------------------#
 # Build pango
 #------------------------#
 pushd pango > /dev/null
@@ -286,7 +279,7 @@ export CFLAGS="-fPIC"
 export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
 
 # When running locally, meson decides to grab cairo-xlib from the system instead of where it SHOULD come from (install/), so we end up with build errors
-# there's no way to fix this as far as I can tell, so patch that stupid behavior out.
+# there's no way to fix this as far as I can tell, so patch that stupid behavior out. Only applies to local builds without a container
 apply-patch ../patches/pango/meson-cairo.patch
 
 MESON_COMMAND=
