@@ -36,10 +36,23 @@ pushd libffi > /dev/null
 export CFLAGS="-fPIC"
 
 ./autogen.sh
-./configure --enable-static --enable-shared=no --prefix="$INSTALLDIR"
+./configure --enable-static --enable-shared --enable-tools=no --enable-tests=no --enable-samples=no --prefix="$INSTALLDIR"
 make install -j$(nproc)
 
 popd > /dev/null
+#------------------------#
+
+#------------------------#
+# Unpack ICU. Originally was going to be compiled as submodule, but I kept getting aborts during the build process. Yay.
+#------------------------#
+# Don't re-download if we dont need to (just check random file)
+if [ ! -f install/lib/libicudata.a ]; then
+	wget -O icu.tgz https://github.com/unicode-org/icu/releases/download/release-70-1/icu4c-70_1-Ubuntu-20.04-x64.tgz
+	tar -xf icu.tgz
+	cp -rf icu/usr/local/* ./install
+	rm -rf icu
+	rm -f icu.tgz
+fi
 #------------------------#
 
 #------------------------#
