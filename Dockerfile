@@ -7,3 +7,4 @@ RUN apt-get install -y texi2html texinfo
 RUN apt-get install -y python3 python-setuptools python3-setuptools-git python3-pip
 RUN apt-get install -y bc
 RUN apt-get install -y gperf gettext autopoint
+RUN apt-get install -y wget curl
