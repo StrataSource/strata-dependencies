@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-# Add all of our required libraries 
-if [ ! -z $RUNNING_ALPINE ]; then
-	apk add build-base clang libpng-static libpng-dev expat-static expat-dev zlib-dev zlib-static freetype-dev freetype-static fontconfig-static pixman-static || error
-	apk add libxcb-static libxrender-dev harfbuzz-static gtk-doc fontconfig-dev pixman-dev
-	apk add git autoconf make cmake automake libtool bzip2-static bzip2-dev brotli-dev brotli-static
-fi
-
 # Applies patch if it does not already exist
 function apply-patch
 {
@@ -18,12 +11,27 @@ function apply-patch
 #	fi
 }
 
+function should-build
+{
+	if [ $# -lt 2 ]; then
+		return 0
+	fi
+	for a in $@; do
+		if [ "$a" == "$1" ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
 INCDIR="$PWD/install/include"
 LIBDIR="$PWD/install/lib"
 INSTALLDIR="$PWD/install"
 
 export CC="gcc"
 export CXX="g++"
+
+export PKG_CONFIG="pkg-config --static" 
 
 # Pull in built executables in install pfx
 export PATH="$PATH:$INSTALLDIR/bin"
@@ -34,79 +42,91 @@ export PKG_CONFIG_PATH="$LIBDIR/pkgconfig"
 #------------------------#
 # Build libffi
 #------------------------#
-pushd libffi > /dev/null
+if should-build "libffi"; then
+	pushd libffi > /dev/null
 
-export CFLAGS="-fPIC"
+	export CFLAGS="-fPIC"
 
-./autogen.sh
-./configure --enable-static --enable-shared --enable-tools=no --enable-tests=no --enable-samples=no --prefix="$INSTALLDIR"
-make install -j$(nproc)
+	./autogen.sh
+	./configure --enable-static --enable-shared --enable-tools=no --enable-tests=no --enable-samples=no --prefix="$INSTALLDIR"
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 #------------------------#
 # Unpack ICU. Originally was going to be compiled as submodule, but I kept getting aborts during the build process. Yay.
 #------------------------#
-# Don't re-download if we dont need to (just check random file)
-if [ ! -f install/lib/libicudata.so ]; then
-	wget -O icu.tgz https://github.com/unicode-org/icu/releases/download/release-70-1/icu4c-70_1-Ubuntu-20.04-x64.tgz
-	tar -xf icu.tgz
-	cp -rf icu/usr/local/* ./install
-	rm -rf icu
-	rm -f icu.tgz
+if should-build "icu"; then
+	# Don't re-download if we dont need to (just check random file)
+	if [ ! -f install/lib/libicudata.so ]; then
+		wget -O icu.tgz https://github.com/unicode-org/icu/releases/download/release-70-1/icu4c-70_1-Ubuntu-20.04-x64.tgz
+		tar -xf icu.tgz
+		cp -rf icu/usr/local/* ./install
+		rm -rf icu
+		rm -f icu.tgz
+	fi
 fi
 #------------------------#
 
 #------------------------#
 # Build pcre
 #------------------------#
-pushd pcre > /dev/null
+if should-build "pcre"; then
+	pushd pcre > /dev/null
 
-export CFLAGS="-fPIC"
+	export CFLAGS="-fPIC"
 
-./autogen.sh
-./configure --enable-static --enable-shared=no --prefix="$INSTALLDIR" --enable-utf --enable-pcre16 --enable-pcre32
-make install -j$(nproc)
+	./autogen.sh
+	./configure --enable-static --enable-shared=no --prefix="$INSTALLDIR" --enable-utf --enable-pcre16 --enable-pcre32
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 
 #------------------------#
 # Build libmd
 #------------------------#
-pushd libmd > /dev/null
+if should-build "libmd"; then
+	pushd libmd > /dev/null
 
-export CFLAGS="-fPIC"
-./autogen
-./configure --prefix="$INSTALLDIR" --enable-static --enable-shared=no
-make install -j$(nproc)
+	export CFLAGS="-fPIC"
+	./autogen
+	./configure --prefix="$INSTALLDIR" --enable-static --enable-shared=no
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 
 #------------------------#
 # Build libz
 #------------------------#
-pushd zlib > /dev/null
+if should-build "zlib"; then
+	pushd zlib > /dev/null
 
-export CFLAGS="-fPIC"
-./configure --static --64 --prefix="$INSTALLDIR"
-make install -j$(nproc)
+	export CFLAGS="-fPIC"
+	./configure --static --64 --prefix="$INSTALLDIR"
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 #------------------------#
 # Build bzip2
 #------------------------#
-pushd bzip2 > /dev/null
+if should-build "bzip2"; then
+	pushd bzip2 > /dev/null
 
-make install -j$(nproc) CFLAGS=-fPIC LDFLAGS=-fPIC PREFIX="$INSTALLDIR"
+	make install -j$(nproc) CFLAGS=-fPIC LDFLAGS=-fPIC PREFIX="$INSTALLDIR"
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 
@@ -114,182 +134,226 @@ popd > /dev/null
 #------------------------#
 # Build gobject, gio, etc
 #------------------------#
-pushd glib > /dev/null
+if should-build "glib"; then
+	pushd glib > /dev/null
 
-export CFLAGS="-fPIC"
+	export CFLAGS="-fPIC"
 
-meson build --buildtype release --default-library static --prefix "$INSTALLDIR" --libdir lib
-cd build
-ninja install
+	meson build --buildtype release --default-library static --prefix "$INSTALLDIR" --libdir lib
+	cd build
+	ninja install
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 #------------------------#
 # Build pixman
 #------------------------#
-pushd pixman > /dev/null
+if should-build "pixman"; then
+	pushd pixman > /dev/null
 
-export CFLAGS="-fPIC"
-./autogen.sh --enable-gtk=no --enable-png=no --enable-shared=no --enable-static --prefix="$INSTALLDIR"
-make install -j$(nproc)
+	export CFLAGS="-fPIC"
+	./autogen.sh --enable-gtk=no --enable-png=no --enable-shared=no --enable-static --prefix="$INSTALLDIR"
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 #------------------------#
 # Build brotli
 #------------------------#
-pushd brotli > /dev/null
+if should-build "brotli"; then
+	pushd brotli > /dev/null
 
-./bootstrap
-export CFLAGS="-fPIC"
-./configure --enable-static --disable-shared --prefix="$INSTALLDIR"
-make install -j$(nproc)
+	./bootstrap
+	export CFLAGS="-fPIC"
+	./configure --enable-static --disable-shared --prefix="$INSTALLDIR"
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 #------------------------#
 # Build libpng
 #------------------------#
-pushd libpng > /dev/null
+if should-build "libpng"; then
+	pushd libpng > /dev/null
 
-export CFLAGS="-fPIC"
-./configure --enable-static --disable-shared --prefix="$INSTALLDIR"
-make install -j$(nproc)
+	export CFLAGS="-fPIC"
+	./configure --enable-static --disable-shared --prefix="$INSTALLDIR"
+	make install -j$(nproc)
 
-# --disable-shared does nothing, cool! 
-rm -f ../install/lib/libpng*.so*
+	# --disable-shared does nothing, cool! 
+	rm -f ../install/lib/libpng*.so*
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 #------------------------#
 # Build jsonc
 #------------------------#
-pushd json-c > /dev/null
+if should-build "json-c"; then
+	pushd json-c > /dev/null
 
-mkdir -p build && cd build
-../cmake-configure --enable-static --prefix="$INSTALLDIR" -- -DDISABLE_EXTRA_LIBS=ON -DCMAKE_BUILD_TYPE="Release"
-make install -j$(nproc)
+	mkdir -p build && cd build
+	../cmake-configure --enable-static --prefix="$INSTALLDIR" -- -DDISABLE_EXTRA_LIBS=ON -DCMAKE_BUILD_TYPE="Release"
+	make install -j$(nproc)
 
-# Once again, no way to cull shared objects!
-rm -f "$PWD"/../../install/lib/libjson-c*.so*
+	# Once again, no way to cull shared objects!
+	rm -f "$PWD"/../../install/lib/libjson-c*.so*
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 #------------------------#
 # Build expat
 #------------------------#
-pushd libexpat/expat > /dev/null
+if should-build "expat"; then
+	pushd libexpat/expat > /dev/null
 
-./buildconf.sh
-export CFLAGS="-fPIC"
+	./buildconf.sh
+	export CFLAGS="-fPIC"
 
-./configure --without-docbook --without-examples --without-tests --enable-static --enable-shared=no --prefix="$INSTALLDIR"
-make install -j$(nproc)
+	./configure --without-docbook --without-examples --without-tests --enable-static --enable-shared=no --prefix="$INSTALLDIR"
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 
 #------------------------#
 # Build freetype
 #------------------------#
-pushd freetype > /dev/null
+if should-build "freetype"; then
+	pushd freetype > /dev/null
 
-# Setup pkgconfig overrides
-export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
-export ZLIB_LIBS=""
-export BZIP2_LIBS=""
-# Manually specify link order for png, bz2, zlib and libm to avoid unresolved symbols due to single pass linking
-export LIBPNG_LIBS="$(realpath ../install/lib/libpng.a) -lbz2 -lz -lm"
-export BROTLI_LIBS="$(realpath ../install/lib/libbrotlidec.a) $(realpath ../install/lib/libbrotlienc.a) $(realpath ../install/lib/libbrotlicommon.a)"
-export CFLAGS="-fPIC"
+	# Setup pkgconfig overrides
+	export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
+	export ZLIB_LIBS=""
+	export BZIP2_LIBS=""
+	# Manually specify link order for png, bz2, zlib and libm to avoid unresolved symbols due to single pass linking
+	export LIBPNG_LIBS="$(realpath ../install/lib/libpng.a) -lbz2 -lz -lm"
+	export BROTLI_LIBS="$(realpath ../install/lib/libbrotlidec.a) $(realpath ../install/lib/libbrotlienc.a) $(realpath ../install/lib/libbrotlicommon.a)"
+	export CFLAGS="-fPIC"
 
-./autogen.sh
-./configure --with-harfbuzz=no --enable-shared --disable-static --prefix="$INSTALLDIR"
-make install -j$(nproc)
+	./autogen.sh
+	./configure --with-harfbuzz=no --enable-shared --disable-static --prefix="$INSTALLDIR"
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 
 #------------------------#
 # Build fontconfig
 #------------------------#
-pushd fontconfig > /dev/null
+if should-build "fontconfig"; then
+	pushd fontconfig > /dev/null
 
-export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
+	export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
 
-# Override pkgconfig stuff
-export CFLAGS="-fPIC -I$INCDIR"
-export FREETYPE_CFLAGS="-I$INCDIR/freetype2 -I$INCDIR/freetype2/freetype"
-export FREETYPE_LIBS="-L$LIBDIR -lfreetype"
-export EXPAT_CFLAGS=""
-export EXPAT_LIBS="$LIBDIR/libexpat.a"
-export JSONC_CFLAGS="-I$INCDIR/json-c"
-export JSONC_LIBS="$LIBDIR/libjson-c.a"
+	# Override pkgconfig stuff
+	export CFLAGS="-fPIC -I$INCDIR"
+	export FREETYPE_CFLAGS="-I$INCDIR/freetype2 -I$INCDIR/freetype2/freetype"
+	export FREETYPE_LIBS="-L$LIBDIR -lfreetype"
+	export EXPAT_CFLAGS=""
+	export EXPAT_LIBS="$LIBDIR/libexpat.a"
+	export JSONC_CFLAGS="-I$INCDIR/json-c"
+	export JSONC_LIBS="$LIBDIR/libjson-c.a"
 
-./autogen.sh --enable-static=no --prefix="$INSTALLDIR" --with-expat="$INSTALLDIR" 
-make install -j$(nproc)
+	./autogen.sh --enable-static=no --prefix="$INSTALLDIR" --with-expat="$INSTALLDIR" 
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 #------------------------#
 # Build cairo
 #------------------------#
-pushd cairo > /dev/null
+if should-build "cairo"; then
+	pushd cairo > /dev/null
 
-export PKG_CONFIG="pkg-config --static" 
-export LDFLAGS="-fPIC -L$LIBDIR -Wl,--no-undefined"
-export CFLAGS="-fPIC"
-export pixman_LIBS="$LIBDIR/libpixman-1.a"
-export png_LIBS="$LIBDIR/libpng.a"
-export FREETYPE_LIBS="-L$LIBDIR -lfreetype"
-export FONTCONFIG_LIBS="-L$LIBDIR -lfontconfig"
+	export LDFLAGS="-fPIC -L$LIBDIR -Wl,--no-undefined"
+	export CFLAGS="-fPIC"
+	export pixman_LIBS="$LIBDIR/libpixman-1.a"
+	export png_LIBS="$LIBDIR/libpng.a"
+	export FREETYPE_LIBS="-L$LIBDIR -lfreetype"
+	export FONTCONFIG_LIBS="-L$LIBDIR -lfontconfig"
 
-./autogen.sh --enable-xlib=no --enable-xlib-xrender=no --enable-xlib-xcb=no --enable-xcb-shm=no --enable-ft --enable-egl=no --without-x --enable-glx=no --enable-wgl=no --enable-quartz=no --enable-svg=yes --enable-pdf=yes --enable-ps=yes --enable-gobject=no --enable-png --disable-static --prefix="$INSTALLDIR"
+	./autogen.sh --enable-xlib=no --enable-xlib-xrender=no --enable-xlib-xcb=no --enable-xcb-shm=no --enable-ft --enable-egl=no --without-x --enable-glx=no --enable-wgl=no --enable-quartz=no --enable-svg=yes --enable-pdf=yes --enable-ps=yes --enable-gobject=no --enable-png --disable-static --prefix="$INSTALLDIR"
 
-make install -j$(nproc)
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 #------------------------#
 # Build harfbuzz
 #------------------------#
-pushd harfbuzz > /dev/null
+if should-build "harfbuzz"; then
+	pushd harfbuzz > /dev/null
 
-export CFLAGS="-fPIC"
-export LDFLAGS="-L$LIBDIR"
+	export CFLAGS="-fPIC"
+	export LDFLAGS="-L$LIBDIR"
 
-./autogen.sh --prefix="$INSTALLDIR" --enable-shared=no --enable-static 
-make install -j$(nproc)
+	./autogen.sh --prefix="$INSTALLDIR" --enable-shared=no --enable-static 
+	make install -j$(nproc)
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
 
 #------------------------#
 # Build pango
 #------------------------#
-pushd pango > /dev/null
+if should-build "pango"; then
+	pushd pango > /dev/null
 
-export CFLAGS="-fPIC"
-export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
+	export CFLAGS="-fPIC"
+	export LDFLAGS="-L$LIBDIR -Wl,--no-undefined"
 
-# When running locally, meson decides to grab cairo-xlib from the system instead of where it SHOULD come from (install/), so we end up with build errors
-# there's no way to fix this as far as I can tell, so patch that stupid behavior out. Only applies to local builds without a container
-apply-patch ../patches/pango/meson-cairo.patch
+	# When running locally, meson decides to grab cairo-xlib from the system instead of where it SHOULD come from (install/), so we end up with build errors
+	# there's no way to fix this as far as I can tell, so patch that stupid behavior out. Only applies to local builds without a container
+	apply-patch ../patches/pango/meson-cairo.patch
 
-MESON_COMMAND=
-[ -f build ] && MESON_COMMAND="--reconfigure"
-meson $MESON_COMMAND build --prefix "$INSTALLDIR" --buildtype release --libdir lib --pkg-config-path "$LIBDIR/pkgconfig" --build.pkg-config-path "$LIBDIR/pkgconfig"
-cd build
-ninja install
+	MESON_COMMAND=
+	[ -f build ] && MESON_COMMAND="--reconfigure"
+	meson $MESON_COMMAND build --prefix "$INSTALLDIR" --buildtype release --libdir lib --pkg-config-path "$LIBDIR/pkgconfig" --build.pkg-config-path "$LIBDIR/pkgconfig"
+	cd build
+	ninja install
 
-popd > /dev/null
+	popd > /dev/null
+fi
 #------------------------#
+
+#------------------------#
+# Create release tarball
+#------------------------#
+if should-build "release"; then
+	mkdir -p release/lib/external/linux64
+	mkdir -p release/bin/linux64
+
+	cp -fv install/lib/*.so release/bin/linux64
+	cp -fv install/lib/*.so release/lib/external/linux64
+
+	strip -x release/bin/linux64/*.so
+
+	function publish
+	{
+		cp -fv "$INSTALLDIR/lib/$1" "release/lib/external/linux64/$2"
+	}
+
+	publish libz.a
+	publish libexpat.a
+
+	tar -cf chaos-deps.tgz release/
+fi
