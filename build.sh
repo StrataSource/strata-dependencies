@@ -366,6 +366,34 @@ fi
 #------------------------#
 
 #------------------------#
+# Build curl
+#------------------------#
+if should-build "curl"; then
+	pushd curl > /dev/null
+
+	./buildconf
+	./configure --disable-shared --enable-static --disable-ldap --enable-ipv6 --enable-unix-sockets --with-ssl --prefix="$INSTALLDIR"
+
+	make install -j$(nproc) LDFLAGS="-static -all-static"
+
+	popd > /dev/null
+fi
+#------------------------#
+
+#------------------------#
+# Build ssl
+#------------------------#
+if should-build "openssl"; then
+	pushd openssl > /dev/null
+
+	./config --prefix="$INSTALLDIR"
+	make install -j$(nproc)
+
+	popd > /dev/null
+fi
+#------------------------#
+
+#------------------------#
 # Create release tarball
 #------------------------#
 RELEASEBIN="release/bin/linux64"
@@ -384,7 +412,7 @@ if should-build "release"; then
 	done
 
 	# Publish all other static libs
-	LIBS=(libz.a libexpat.a)
+	LIBS=(libz.a libexpat.a libcrypto.a libssl.a libcurl.a)
 	for l in ${LIBS[@]}; do
 		cp -fv "$INSTALLDIR/lib/$l" "release/lib/external/linux64/$l"
 	done
