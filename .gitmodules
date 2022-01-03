@@ -49,3 +49,6 @@
 [submodule "pcre"]
 	path = pcre
 	url = https://github.com/jwilk-mirrors/pcre
+[submodule "fribidi"]
+	path = fribidi
+	url = https://github.com/fribidi/fribidi

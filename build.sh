@@ -48,7 +48,7 @@ if should-build "libffi"; then
 	export CFLAGS="-fPIC"
 
 	./autogen.sh
-	./configure --enable-static --enable-shared --enable-tools=no --enable-tests=no --enable-samples=no --prefix="$INSTALLDIR"
+	./configure --enable-static --enable-shared=no --enable-tools=no --enable-tests=no --enable-samples=no --prefix="$INSTALLDIR"
 	make install -j$(nproc)
 
 	popd > /dev/null
@@ -274,6 +274,21 @@ if should-build "fontconfig"; then
 	popd > /dev/null
 fi
 #------------------------#
+
+#
+#------------------------#
+# Build fribidi
+#------------------------#
+if should-build "fribidi"; then
+	pushd fribidi > /dev/null
+
+	export CFLAGS="-fPIC"
+	./autogen.sh --prefix="$INSTALLDIR" --enable-shared=no --enable-static 
+
+	make install -j$(nproc)
+
+	popd > /dev/null
+fi
 
 #------------------------#
 # Build cairo
