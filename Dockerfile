@@ -8,4 +8,5 @@ RUN apt-get install -y python3 python-setuptools python3-setuptools-git python3-
 RUN apt-get install -y bc
 RUN apt-get install -y gperf gettext autopoint
 RUN apt-get install -y wget curl
-RUN apt-get install -y bison flex yasm nasm
+RUN apt-get install -y bison flex yasm nasm libvulkan-dev
+RUN apt-get install -y glslang-tools

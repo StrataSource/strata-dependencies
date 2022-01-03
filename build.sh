@@ -5,7 +5,8 @@ cd "$(dirname "$0")"
 
 # Applies patch if it does not already exist
 function apply-patch {
-	git apply $1 || true # Honestly fuck off, patch really likes doing interactive bullshit and it can kiss my ass. If this breaks, nobody fucking cares
+	git apply $1 || true 
+	# TODO: Fix, patch does a lot if interactive crap that breaks this. Currently ignoring patch errors
 #	patch -N --dry-run --silent < $1 2> /dev/null
 #	if [ $? -eq 0 ]; then
 #		patch $1
@@ -470,6 +471,23 @@ fi
 #------------------------#
 
 #------------------------#
+# Build dxvk-native
+#------------------------#
+if should-build "dxvk-native"; then
+	pushd dxvk-native > /dev/null
+
+	export LDFLAGS="-L$LIBDIR"
+	export CFLAGS="-I$INSTALLDIR/include"
+	export CXXFLAGS="-I$INSTALLDIR/include"
+	meson --buildtype release --libdir lib --prefix "$INSTALLDIR" --pkg-config-path "$LIBDIR/pkgconfig" --build.pkg-config-path "$LIBDIR/pkgconfig" build_linux64
+	cd build_linux64
+	ninja install
+
+	popd > /dev/null
+fi
+#------------------------#
+
+#------------------------#
 # Create release tarball
 #------------------------#
 RELEASEBIN="release/bin/linux64"
@@ -479,7 +497,7 @@ if should-build "release"; then
 	mkdir -p release/bin/linux64
 
 	# Publish all runtime SOs
-	RT=(libSDL2.so libcairo.so libfreetype.so libfontconfig.so libicudata.so libicui18n.so libicuio.so libicuuc.so libicutu.so libpango-1.0.so libpangocairo-1.0.so libpangoft2-1.0.so)
+	RT=(libdxvk_dxgi.so libdxvk_d3d11.so libdxvk_d3d9.so libSDL2.so libcairo.so libfreetype.so libfontconfig.so libicudata.so libicui18n.so libicuio.so libicuuc.so libicutu.so libpango-1.0.so libpangocairo-1.0.so libpangoft2-1.0.so)
 	for l in ${RT[@]}; do
 		LIB="$(readelf -d install/lib/$l | grep "SONAME" | grep -Eo "$l(.so)?(.[0-9]+)+")"
 		cp -fv "install/lib/$LIB" "$RELEASEBIN/$LIB"
