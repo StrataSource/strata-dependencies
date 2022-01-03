@@ -73,3 +73,9 @@
 [submodule "vorbis"]
 	path = vorbis
 	url = https://gitlab.xiph.org/xiph/vorbis
+[submodule "SDL"]
+	path = SDL
+	url = https://github.com/libsdl-org/SDL
+[submodule "dxvk-native"]
+	path = dxvk-native
+	url = https://github.com/ChaosInitiative/dxvk-native

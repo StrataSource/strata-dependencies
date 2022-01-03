@@ -456,6 +456,20 @@ fi
 #------------------------#
 
 #------------------------#
+# Build SDL2
+#------------------------#
+if should-build "SDL2"; then
+	pushd SDL > /dev/null
+
+    ./configure --enable-cpuinfo --enable-joystick --enable-render --enable-sse3 --enable-video  --enable-video-x11 --enable-video-vulkan --enable-xinput --enable-audio --enable-threads --with-x --prefix="$INSTALLDIR"
+
+	make install -j$(nproc)
+
+	popd > /dev/null
+fi
+#------------------------#
+
+#------------------------#
 # Create release tarball
 #------------------------#
 RELEASEBIN="release/bin/linux64"
@@ -465,7 +479,7 @@ if should-build "release"; then
 	mkdir -p release/bin/linux64
 
 	# Publish all runtime SOs
-	RT=(libcairo.so libfreetype.so libfontconfig.so libicudata.so libicui18n.so libicuio.so libicuuc.so libicutu.so libpango-1.0.so libpangocairo-1.0.so libpangoft2-1.0.so)
+	RT=(libSDL2.so libcairo.so libfreetype.so libfontconfig.so libicudata.so libicui18n.so libicuio.so libicuuc.so libicutu.so libpango-1.0.so libpangocairo-1.0.so libpangoft2-1.0.so)
 	for l in ${RT[@]}; do
 		LIB="$(readelf -d install/lib/$l | grep "SONAME" | grep -Eo "$l(.so)?(.[0-9]+)+")"
 		cp -fv "install/lib/$LIB" "$RELEASEBIN/$LIB"
