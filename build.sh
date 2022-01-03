@@ -396,7 +396,7 @@ fi
 # Build libogg
 #------------------------#
 if should-build "libogg"; then
-	pushd libogg > /dev/null
+	pushd ogg > /dev/null
 
 	mkdir -p build && cd build
 	cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DCMAKE_C_FLAGS=-fPIC -DCMAKE_INSTALL_PREFIX="$INSTALLDIR"
@@ -440,6 +440,20 @@ if should-build "libwebm"; then
 fi
 #------------------------#
 
+#------------------------#
+# Build vorbis
+#------------------------#
+if should-build "vorbis"; then
+	pushd vorbis > /dev/null
+
+	mkdir -p build && cd build
+	cmake .. -DCMAKE_C_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC -DCMAKE_INSTALL_PREFIX="$INSTALLDIR" 
+
+	make install -j$(nproc)
+
+	popd > /dev/null
+fi
+#------------------------#
 
 #------------------------#
 # Create release tarball
@@ -460,7 +474,7 @@ if should-build "release"; then
 	done
 
 	# Publish all other static libs
-	LIBS=(libz.a libexpat.a libcrypto.a libssl.a libcurl.a libvpx.a libogg.a libwebm.a)
+	LIBS=(libz.a libexpat.a libcrypto.a libssl.a libcurl.a libvpx.a libogg.a libwebm.a libvorbis.a libvorbisenc.a libvorbisfile.a)
 	for l in ${LIBS[@]}; do
 		cp -fv "$INSTALLDIR/lib/$l" "release/lib/external/linux64/$l"
 	done
