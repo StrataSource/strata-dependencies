@@ -4,8 +4,7 @@ set -e
 cd "$(dirname "$0")"
 
 # Applies patch if it does not already exist
-function apply-patch
-{
+function apply-patch {
 	git apply $1 || true # Honestly fuck off, patch really likes doing interactive bullshit and it can kiss my ass. If this breaks, nobody fucking cares
 #	patch -N --dry-run --silent < $1 2> /dev/null
 #	if [ $? -eq 0 ]; then
@@ -13,8 +12,7 @@ function apply-patch
 #	fi
 }
 
-function should-build
-{
+function should-build {
 	if [ $# -lt 2 ]; then
 		return 0
 	fi
@@ -25,7 +23,6 @@ function should-build
 	done
 	return 1
 }
-
 INCDIR="$PWD/install/include"
 LIBDIR="$PWD/install/lib"
 INSTALLDIR="$PWD/install"
@@ -371,22 +368,26 @@ fi
 #------------------------#
 # Create release tarball
 #------------------------#
+RELEASEBIN="release/bin/linux64"
+RELEASELIB="release/lib/external/linux64"
 if should-build "release"; then
 	mkdir -p release/lib/external/linux64
 	mkdir -p release/bin/linux64
 
-	cp -fv install/lib/*.so release/bin/linux64
-	cp -fv install/lib/*.so release/lib/external/linux64
+	# Publish all runtime SOs
+	RT=(libcairo.so libfreetype.so libfontconfig.so libicudata.so libicui18n.so libicuio.so libicuuc.so libicutu.so libpango-1.0.so libpangocairo-1.0.so libpangoft2-1.0.so)
+	for l in ${RT[@]}; do
+		LIB="$(readelf -d install/lib/$l | grep "SONAME" | grep -Eo "$l(.so)?(.[0-9]+)+")"
+		cp -fv "install/lib/$LIB" "$RELEASEBIN/$LIB"
+		cp -fv "install/lib/$l" "$RELEASELIB/$l"
+		strip -x "$RELEASEBIN/$LIB"
+	done
 
-	strip -x release/bin/linux64/*.so
-
-	function publish
-	{
-		cp -fv "$INSTALLDIR/lib/$1" "release/lib/external/linux64/$2"
-	}
-
-	publish libz.a
-	publish libexpat.a
+	# Publish all other static libs
+	LIBS=(libz.a libexpat.a)
+	for l in ${LIBS[@]}; do
+		cp -fv "$INSTALLDIR/lib/$l" "release/lib/external/linux64/$l"
+	done
 
 	tar -cf chaos-deps.tgz release/
 fi
