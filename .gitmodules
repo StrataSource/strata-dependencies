@@ -55,3 +55,9 @@
 [submodule "c2man"]
 	path = c2man
 	url = https://github.com/fribidi/c2man
+[submodule "curl"]
+	path = curl
+	url = https://github.com/curl/curl
+[submodule "openssl"]
+	path = openssl
+	url = https://github.com/openssl/openssl
