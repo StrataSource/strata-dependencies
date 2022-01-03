@@ -12,15 +12,13 @@ function apply-patch {
 #	fi
 }
 
+ARGS="$@"
+
 function should-build {
-	if [ $# -lt 2 ]; then
+	if [ $# -lt 1 ]; then
 		return 0
 	fi
-	for a in $@; do
-		if [ "$a" == "$1" ]; then
-			return 0
-		fi
-	done
+	for a in $ARGS; do [[ "$a" == "$1" ]] && return 0; done
 	return 1
 }
 INCDIR="$PWD/install/include"
@@ -366,13 +364,27 @@ fi
 #------------------------#
 
 #------------------------#
+# Build ssl
+#------------------------#
+if should-build "openssl"; then
+	pushd openssl > /dev/null
+
+	./config --prefix="$INSTALLDIR"
+	make -j$(nproc)
+	make install_sw # NOTE: Can't run with more than 1 job otherwise it fails! Nice! 
+
+	popd > /dev/null
+fi
+#------------------------#
+
+#------------------------#
 # Build curl
 #------------------------#
 if should-build "curl"; then
 	pushd curl > /dev/null
 
 	./buildconf
-	./configure --disable-shared --enable-static --disable-ldap --enable-ipv6 --enable-unix-sockets --with-ssl --prefix="$INSTALLDIR"
+	./configure --disable-shared --enable-static --disable-ldap --enable-ipv6 --enable-unix-sockets --with-ssl --prefix="$INSTALLDIR" --with-openssl="$INSTALLDIR"
 
 	make install -j$(nproc) LDFLAGS="-static -all-static"
 
@@ -381,17 +393,53 @@ fi
 #------------------------#
 
 #------------------------#
-# Build ssl
+# Build libogg
 #------------------------#
-if should-build "openssl"; then
-	pushd openssl > /dev/null
+if should-build "libogg"; then
+	pushd libogg > /dev/null
 
-	./config --prefix="$INSTALLDIR"
+	mkdir -p build && cd build
+	cmake .. -DCMAKE_CXX_FLAGS=-fPIC -DCMAKE_C_FLAGS=-fPIC -DCMAKE_INSTALL_PREFIX="$INSTALLDIR"
+
 	make install -j$(nproc)
+	
+	popd > /dev/null
+fi
+#------------------------#
+
+
+#------------------------#
+# Build libvpx
+#------------------------#
+if should-build "libvpx"; then
+	pushd libvpx > /dev/null
+
+	./configure --disable-unit-tests --disable-examples --disable-docs --disable-tools --disable-shared --target=x86_64-linux-gcc --enable-static --prefix="$INSTALLDIR"
+
+	make install -j$(nproc)
+	
+	popd > /dev/null
+fi
+#------------------------#
+
+#------------------------#
+# Build libwebm
+#------------------------#
+if should-build "libwebm"; then
+	pushd libwebm > /dev/null
+
+	mkdir -p build && cd build
+	cmake .. -DCMAKE_C_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC -DCMAKE_INSTALL_PREFIX="$INSTALLDIR"
+
+	make -j$(nproc)
+
+	# No install rule for libwebm????
+	cp libwebm.a "$INSTALLDIR/lib/libwebm.a"
 
 	popd > /dev/null
 fi
 #------------------------#
+
 
 #------------------------#
 # Create release tarball
@@ -412,10 +460,11 @@ if should-build "release"; then
 	done
 
 	# Publish all other static libs
-	LIBS=(libz.a libexpat.a libcrypto.a libssl.a libcurl.a)
+	LIBS=(libz.a libexpat.a libcrypto.a libssl.a libcurl.a libvpx.a libogg.a libwebm.a)
 	for l in ${LIBS[@]}; do
 		cp -fv "$INSTALLDIR/lib/$l" "release/lib/external/linux64/$l"
 	done
 
 	tar -cf chaos-deps.tgz release/
 fi
+

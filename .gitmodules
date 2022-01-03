@@ -61,3 +61,12 @@
 [submodule "openssl"]
 	path = openssl
 	url = https://github.com/openssl/openssl
+[submodule "ogg"]
+	path = ogg
+	url = https://github.com/xiph/ogg
+[submodule "libvpx"]
+	path = libvpx
+	url = https://chromium.googlesource.com/webm/libvpx
+[submodule "libwebm"]
+	path = libwebm
+	url = https://chromium.googlesource.com/webm/libwebm
