@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+cd "$(dirname "$0")"
+
 # Applies patch if it does not already exist
 function apply-patch
 {
@@ -275,7 +277,22 @@ if should-build "fontconfig"; then
 fi
 #------------------------#
 
-#
+#------------------------#
+# Build c2man (needed for fribidi)
+#------------------------#
+if should-build "c2man"; then
+	pushd c2man > /dev/null
+
+	./Configure -s -d -e
+	make -j$(nproc)
+
+	# No good install rules with this cursed build system
+	cp c2man ../install/bin/
+
+	popd > /dev/null
+fi
+#------------------------#
+
 #------------------------#
 # Build fribidi
 #------------------------#
@@ -289,6 +306,7 @@ if should-build "fribidi"; then
 
 	popd > /dev/null
 fi
+#------------------------#
 
 #------------------------#
 # Build cairo

@@ -52,3 +52,6 @@
 [submodule "fribidi"]
 	path = fribidi
 	url = https://github.com/fribidi/fribidi
+[submodule "c2man"]
+	path = c2man
+	url = https://github.com/fribidi/c2man
