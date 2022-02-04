@@ -8,11 +8,6 @@ function apply-patch {
 	if ! git apply --reverse --check < $1; then
 		git apply $1
 	fi
-	# TODO: Fix, patch does a lot if interactive crap that breaks this. Currently ignoring patch errors
-#	patch -N --dry-run --silent < $1 2> /dev/null
-#	if [ $? -eq 0 ]; then
-#		patch $1
-#	fi
 }
 
 ARGS="$@"
@@ -506,11 +501,10 @@ RELEASELIB="release/lib/external/linux64"
 if should-build "release"; then
 	mkdir -p release/lib/external/linux64
 	mkdir -p release/bin/linux64
-
 	# Publish all runtime SOs
 	RT=(libdxvk_dxgi.so libdxvk_d3d11.so libdxvk_d3d9.so libSDL2.so libcairo.so libfreetype.so libfontconfig.so libicudata.so libicui18n.so libicuio.so libicuuc.so libicutu.so libpango-1.0.so libpangocairo-1.0.so libpangoft2-1.0.so)
 	for l in ${RT[@]}; do
-		LIB="$(readelf -d install/lib/$l | grep "SONAME" | grep -Eo "$l(.so)?(.[0-9]+)+")"
+		LIB="$(readelf -d install/lib/$l | grep "SONAME" | grep -oP "\[\K[^\]]+")"
 		cp -fv "install/lib/$LIB" "$RELEASEBIN/$LIB"
 		cp -fv "install/lib/$l" "$RELEASELIB/$l"
 		strip -x "$RELEASEBIN/$LIB"
