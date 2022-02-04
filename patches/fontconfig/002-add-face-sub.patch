@@ -1,0 +1,83 @@
+diff --git a/fc-validate/fc-validate.c b/fc-validate/fc-validate.c
+index e8119c6..d1a93c4 100644
+--- a/fc-validate/fc-validate.c
++++ b/fc-validate/fc-validate.c
+@@ -181,7 +181,7 @@ main (int argc, char **argv)
+ 	    FT_Face face;
+ 	    FcCharSet *fcs, *fcs_sub;
+ 
+-	    if (FT_New_Face (ftlib, argv[i], index, &face))
++	    if (FT_New_Face_Func (ftlib, argv[i], index, &face))
+ 	    {
+ 		if (!index_set && index > 0)
+ 		    break;
+diff --git a/fontconfig/fcfreetype.h b/fontconfig/fcfreetype.h
+index 20b1128..5826cc0 100644
+--- a/fontconfig/fcfreetype.h
++++ b/fontconfig/fcfreetype.h
+@@ -54,6 +54,8 @@ FcFreeTypeQueryFace (const FT_Face  face,
+ 		     unsigned int   id,
+ 		     FcBlanks	    *blanks);
+ 
++FcPublic void fontconfig_ft2_new_face_substitute ( void *func );
++
+ _FCFUNCPROTOEND
+ 
+ #endif
+diff --git a/src/fcfreetype.c b/src/fcfreetype.c
+index cf923f2..48b6004 100644
+--- a/src/fcfreetype.c
++++ b/src/fcfreetype.c
+@@ -46,6 +46,8 @@
+ #include "fcfoundry.h"
+ #include "ftglue.h"
+ 
++FT_Error (*FT_New_Face_Func)(FT_Library, const char*, FT_Long, FT_Face*) = &FT_New_Face;
++
+ /*
+  * Keep Han languages separated by eliminating languages
+  * that the codePageRange bits says aren't supported
+@@ -2238,7 +2240,7 @@ FcFreeTypeQuery(const FcChar8	*file,
+     if (FT_Init_FreeType (&ftLibrary))
+ 	return NULL;
+ 
+-    if (FT_New_Face (ftLibrary, (char *) file, id & 0x7FFFFFFF, &face))
++    if (FT_New_Face_Func (ftLibrary, (char *) file, id & 0x7FFFFFFFF, &face))
+ 	goto bail;
+ 
+     if (count)
+@@ -2281,7 +2283,7 @@ FcFreeTypeQueryAll(const FcChar8	*file,
+     if (FT_Init_FreeType (&ftLibrary))
+ 	return 0;
+ 
+-    if (FT_New_Face (ftLibrary, (const char *) file, face_num, &face))
++    if (FT_New_Face_Func (ftLibrary, (const char *) file, face_num, &face))
+ 	goto bail;
+ 
+     num_faces = face->num_faces;
+@@ -2354,7 +2356,7 @@ skip:
+ 	    face_num++;
+ 	    instance_num = set_instance_num;
+ 
+-	    if (FT_New_Face (ftLibrary, (const char *) file, face_num, &face))
++	    if (FT_New_Face_Func (ftLibrary, (const char *) file, face_num, &face))
+ 	      break;
+ 	}
+     } while (!err && (!index_set || face_num == set_face_num) && face_num < num_faces);
+@@ -2833,6 +2835,16 @@ FcFontHasHint (FT_Face face)
+     return FindTable (face, TTAG_prep);
+ }
+ 
++void
++fontconfig_ft2_new_face_substitute ( void *func )
++{
++  if (func == NULL) {
++    func = &FT_New_Face;
++  }
++
++  FT_New_Face_Func = func;
++}
++
+ 
+ #define __fcfreetype__
+ #include "fcaliastail.h"

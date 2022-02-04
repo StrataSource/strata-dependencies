@@ -272,6 +272,8 @@ if should-build "fontconfig"; then
 	export JSONC_CFLAGS="-I$INCDIR/json-c"
 	export JSONC_LIBS="$LIBDIR/libjson-c.a"
 
+	apply-patch "$PATCHDIR/fontconfig/002-add-face-sub.patch"
+
 	./autogen.sh --enable-static=no --prefix="$INSTALLDIR" --with-expat="$INSTALLDIR" 
 	make install -j$(nproc)
 
