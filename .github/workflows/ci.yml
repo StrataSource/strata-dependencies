@@ -20,7 +20,7 @@ jobs:
           sudo apt-get install -y python3 python-setuptools python3-setuptools-git python3-pip
           sudo apt-get install -y gperf gettext autopoint wget curl bc
           sudo apt-get install -y bison flex yasm nasm libvulkan-dev
-          sudo apt-get install -y glslang-tools
+          sudo apt-get install -y glslang-tools ragel
       - name: Build
         working-directory: ${{github.workspace}}
         run: |
