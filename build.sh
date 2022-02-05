@@ -518,6 +518,14 @@ if should-build "release"; then
 		cp -fv "$INSTALLDIR/lib/$l" "release/lib/external/linux64/$l"
 	done
 
+	# Publish headers
+	IDIR="release/thirdparty/include/linux64"
+	mkdir -p "$IDIR"
+	cp -rfv "$INSTALLDIR/include" "$IDIR"
+
+	# Cull some of the headers we don't need...
+	rm -fv "$IDIR/png*.h"
+
 	tar -cf chaos-deps.tgz release/
 fi
 
