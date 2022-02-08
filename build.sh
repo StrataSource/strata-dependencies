@@ -147,6 +147,9 @@ if should-build "glib"; then
 	cd build
 	ninja install
 
+	# Glib puts its config in lib for some reason, so copy that out
+	cp "$INSTALLDIR/lib/glib-2.0/include/glibconfig.h" "$INSTALLDIR/include/glib-2.0/"
+
 	popd > /dev/null
 fi
 #------------------------#
@@ -470,7 +473,7 @@ fi
 if should-build "SDL2"; then
 	pushd SDL > /dev/null
 
-    ./configure --enable-cpuinfo --enable-joystick --enable-render --enable-sse3 --enable-video  --enable-video-x11 --enable-video-vulkan --enable-xinput --enable-audio --enable-threads --with-x --prefix="$INSTALLDIR"
+    ./configure --enable-cpuinfo --enable-video-wayland --enable-joystick --enable-render --enable-sse3 --enable-video  --enable-video-x11 --enable-video-vulkan --enable-xinput --enable-audio --enable-threads --with-x --prefix="$INSTALLDIR"
 
 	make install -j$(nproc)
 
@@ -519,8 +522,8 @@ if should-build "release"; then
 	done
 
 	# Publish headers
-	IDIR="release/thirdparty/include/linux64"
-	mkdir -p "$IDIR"
+	IDIR="release/include"
+	rm -rf "$IDIR" || true
 	cp -rfv "$INSTALLDIR/include" "$IDIR"
 
 	# Cull some of the headers we don't need...
