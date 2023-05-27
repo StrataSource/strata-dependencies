@@ -76,6 +76,3 @@
 [submodule "SDL"]
 	path = SDL
 	url = https://github.com/libsdl-org/SDL
-[submodule "dxvk-native"]
-	path = dxvk-native
-	url = https://github.com/ChaosInitiative/dxvk-native
