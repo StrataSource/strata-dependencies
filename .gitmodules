@@ -1,6 +1,6 @@
 [submodule "cairo"]
 	path = cairo
-	url = https://github.com/freedesktop/cairo
+	url = https://gitlab.freedesktop.org/cairo/cairo.git
 [submodule "pango"]
 	path = pango
 	url = https://github.com/GNOME/pango
