@@ -51,7 +51,7 @@ def get_global_env() -> dict:
         'CXX': 'g++',
         'PKG_CONFIG': 'pkg-config --static',
         'PATH': f'{os.getenv("PATH")}:{get_install_dir()}/bin',
-        'PKG_CONFIG_PATH': f'{get_lib_dir()}/pkgconfig'
+        'PKG_CONFIG_PATH': f'{get_lib_dir()}/pkgconfig',
     }
 
 
@@ -566,19 +566,19 @@ class Dep_pango(Dependency):
     def apply_patches(self) -> bool:
         return self._apply_patches([
             'patches/pango/001-add-face-sub.patch',
-            #'patches/pango/meson-cairo.patch'
+            'patches/pango/meson-cairo.patch'
         ])
     
     
     def configure(self) -> bool:
         return self._execute_cmds(
             ['meson', 'build', '--prefix', get_install_dir(), '--buildtype', 'release',
-             '--libdir', 'lib', '--pkg-config-path', f'{get_lib_dir}/pkgconfig',
-             #'--build.pkg-config.path', f'{get_lib_dir()}/pkgconfig'
+             '--libdir', 'lib', '--pkg-config-path', f'{get_lib_dir()}/pkgconfig',
+             '--build.pkg-config-path', f'{get_lib_dir()}/pkgconfig'
             ],
             env={
-                'CFLAGS': '-fPIC',
-                'LDFLAGS': f'-L{get_lib_dir()} -Wl,--no-undefined'
+                'CFLAGS': f'-fPIC -I{get_inc_dir()}/freetype2',
+                'LDFLAGS': f'-L{get_lib_dir()} -Wl,--no-undefined -L{get_lib_dir()}',
             }
         )
     
