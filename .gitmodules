@@ -1,78 +1,78 @@
 [submodule "cairo"]
-	path = cairo
+	path = repos/cairo
 	url = https://gitlab.freedesktop.org/cairo/cairo.git
 [submodule "pango"]
-	path = pango
+	path = repos/pango
 	url = https://github.com/GNOME/pango
 [submodule "freetype"]
-	path = freetype
+	path = repos/freetype
 	url = https://github.com/freetype/freetype
 [submodule "libpng"]
-	path = libpng
+	path = repos/libpng
 	url = https://github.com/glennrp/libpng
 [submodule "zlib"]
-	path = zlib
+	path = repos/zlib
 	url = https://github.com/madler/zlib
 [submodule "bzip2"]
-	path = bzip2
+	path = repos/bzip2
 	url = git://sourceware.org/git/bzip2.git
 [submodule "brotli"]
-	path = brotli
+	path = repos/brotli
 	url = https://github.com/google/brotli
 [submodule "harfbuzz"]
-	path = harfbuzz
+	path = repos/harfbuzz
 	url = https://github.com/harfbuzz/harfbuzz
 [submodule "fontconfig"]
-	path = fontconfig
+	path = repos/fontconfig
 	url = https://gitlab.freedesktop.org/fontconfig/fontconfig
 [submodule "json-c"]
-	path = json-c
+	path = repos/json-c
 	url = https://github.com/json-c/json-c
 [submodule "libexpat"]
-	path = libexpat
+	path = repos/libexpat
 	url = https://github.com/libexpat/libexpat
 [submodule "libxml2"]
-	path = libxml2
+	path = repos/libxml2
 	url = https://gitlab.gnome.org/GNOME/libxml2
 [submodule "pixman"]
-	path = pixman
+	path = repos/pixman
 	url = https://gitlab.freedesktop.org/pixman/pixman
 [submodule "libmd"]
-	path = libmd
+	path = repos/libmd
 	url = https://github.com/guillemj/libmd
 [submodule "glib"]
-	path = glib
+	path = repos/glib
 	url = https://gitlab.gnome.org/GNOME/glib
 [submodule "libffi"]
-	path = libffi
+	path = repos/libffi
 	url = https://github.com/libffi/libffi
 [submodule "pcre"]
-	path = pcre
+	path = repos/pcre
 	url = https://github.com/jwilk-mirrors/pcre
 [submodule "fribidi"]
-	path = fribidi
+	path = repos/fribidi
 	url = https://github.com/fribidi/fribidi
 [submodule "c2man"]
-	path = c2man
+	path = repos/c2man
 	url = https://github.com/fribidi/c2man
 [submodule "curl"]
-	path = curl
+	path = repos/curl
 	url = https://github.com/curl/curl
 [submodule "openssl"]
-	path = openssl
+	path = repos/openssl
 	url = https://github.com/openssl/openssl
 [submodule "ogg"]
-	path = ogg
+	path = repos/ogg
 	url = https://github.com/xiph/ogg
 [submodule "libvpx"]
-	path = libvpx
+	path = repos/libvpx
 	url = https://chromium.googlesource.com/webm/libvpx
 [submodule "libwebm"]
-	path = libwebm
+	path = repos/libwebm
 	url = https://chromium.googlesource.com/webm/libwebm
 [submodule "vorbis"]
-	path = vorbis
+	path = repos/vorbis
 	url = https://gitlab.xiph.org/xiph/vorbis
 [submodule "SDL"]
-	path = SDL
+	path = repos/SDL
 	url = https://github.com/libsdl-org/SDL
