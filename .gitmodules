@@ -31,9 +31,6 @@
 [submodule "libexpat"]
 	path = repos/libexpat
 	url = https://github.com/libexpat/libexpat
-[submodule "libxml2"]
-	path = repos/libxml2
-	url = https://gitlab.gnome.org/GNOME/libxml2
 [submodule "pixman"]
 	path = repos/pixman
 	url = https://gitlab.freedesktop.org/pixman/pixman
