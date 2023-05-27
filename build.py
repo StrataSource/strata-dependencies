@@ -557,10 +557,60 @@ class Dep_harfbuzz(Dependency):
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
 
 
+class Dep_libdatrie(Dependency):
+
+    def get_directory(self) -> str:
+        return 'libdatrie'
+
+
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['./autogen.sh'],
+            ['./configure', '--enable-shared=no', '--enable-static', f'--prefix={get_install_dir()}'],
+            env={
+                'CFLAGS': '-fPIC'
+            }
+        )
+    
+    
+    def build(self) -> bool:
+        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+
+
+
+class Dep_libthai(Dependency):
+
+    def get_directory(self) -> str:
+        return 'libthai'
+
+
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['./autogen.sh'],
+            ['./configure', '--enable-shared=no', '--enable-static', f'--prefix={get_install_dir()}'],
+            env={
+                'CFLAGS': '-fPIC'
+            }
+        )
+    
+    
+    def build(self) -> bool:
+        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+
+
+
 class Dep_pango(Dependency):
     
     def get_directory(self) -> str:
         return 'pango'
+    
+    
+    def get_artifacts(self) -> list[str]:
+        return [
+            'libpango-1.0.so',
+            'libpangocairo-1.0.so',
+            'libpangoft2-1.0.so'
+        ]
     
     
     def apply_patches(self) -> bool:
@@ -603,6 +653,8 @@ def main():
         'fontconfig': Dep_fontconfig(),
         'c2man': Dep_c2man(),
         'fribidi': Dep_fribidi(),
+        'libdatrie': Dep_libdatrie(),
+        'libthai': Dep_libthai(),
         'cairo': Dep_cairo(),
         'harfbuzz': Dep_harfbuzz(),
         'pango': Dep_pango()

@@ -73,3 +73,9 @@
 [submodule "SDL"]
 	path = repos/SDL
 	url = https://github.com/libsdl-org/SDL
+[submodule "repos/libthai"]
+	path = repos/libthai
+	url = https://github.com/tlwg/libthai.git
+[submodule "repos/libdatrie"]
+	path = repos/libdatrie
+	url = https://github.com/tlwg/libdatrie.git
