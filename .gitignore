@@ -4,3 +4,4 @@ lib
 *.a
 release
 *.tgz
+.vscode

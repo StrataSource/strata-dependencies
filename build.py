@@ -122,7 +122,7 @@ class Dependency:
         Runs all build steps associated with this dependency
         Applies patches, configures and builds
         """
-        with WorkDir(f'{get_top()}/{self.get_directory()}'):
+        with WorkDir(f'{get_top()}/repos/{self.get_directory()}'):
             if not self.apply_patches():
                 print('Failed to apply patches')
                 return False
