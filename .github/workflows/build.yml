@@ -1,0 +1,32 @@
+name: Build and Package Dependencies
+on: [push]
+
+jobs:
+  build-release:
+    # Ideally we'd be able to run on an older version of ubuntu (mainly for the glibc version), but unfortunately we need a pretty recent version of autoconf!
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'true'
+        
+      - name: Install deps
+        run: |
+          sudo apt install python3 gcc g++ autoconf autoconf-archive cmake automake make meson gtk-doc-tools libtool ninja-build xorg-dev texi2html texinfo gperf gettext autopoint
+          
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Build and Package
+        run: |
+          python3 build.py --verbose
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: strata-deps-linux64
+          path: release-linux-x86_64.tar.gz

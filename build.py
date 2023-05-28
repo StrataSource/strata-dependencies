@@ -752,4 +752,6 @@ def main():
             exit(1)
     print('Finished building all dependencies')
 
+    create_release(deps)
+
 main()
