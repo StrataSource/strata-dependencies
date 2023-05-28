@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import requests
 import subprocess
 import shutil
 import os
@@ -681,8 +680,11 @@ def create_release(deps: Dict[str, Dependency]):
     # Strip everything
     for c in glob.glob('release/**/*.so*', recursive=True):
         subprocess.run(['strip', '-x', c])
+        subprocess.run(['chrpath', '-d', c])
         if verbose:
             print(f'strip -x {c}')
+            print(f'chrpath -d {c}')
+
     # Create a tarball
     name = shutil.make_archive('release-linux-x86_64', 'gztar', 'release')
     print(f'Created {name}')
