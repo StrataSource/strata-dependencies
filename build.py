@@ -7,6 +7,7 @@ import os
 import multiprocessing
 import argparse
 import glob
+import re
 
 from contextlib import AbstractContextManager
 
@@ -107,7 +108,7 @@ class Dependency:
         specify libcairo.so, but libcairo.so.2 will end up in bin/linux64.
         For the engine repo zip (which is for lib/external/linux64), the files returned from this method are used directly
         """
-        raise []
+        return []
 
 
     def get_directory(self) -> str:
@@ -636,6 +637,56 @@ class Dep_pango(Dependency):
         return self._execute_cmds(['ninja', '-C', 'build', 'install'])
 
 
+def get_soname(lib: str) -> str|None:
+    result = subprocess.run(['readelf', '-d', f'{get_lib_dir()}/{lib}'], capture_output=True)
+    if result.returncode != 0:
+        return None
+    data = result.stdout.decode('utf-8')
+    try:
+        matches = re.search(r'soname: \[(.*)]$', data, re.MULTILINE)
+        return matches.group(1)
+    except:
+        return None
+    
+    
+def mkdir_p(path: str) -> bool:
+    comps = path.split('/')
+    if len(comps) <= 0:
+        return False
+    p = comps[0]
+    for i in range(1, len(comps)):
+        if not os.path.exists(p):
+            os.mkdir(p)
+        p += '/' + comps[i]
+    if not os.path.exists(p):
+        os.mkdir(p)
+    return True
+
+
+def install_lib(lib: str):
+    soname = get_soname(lib)
+    if soname is None:
+        soname = lib
+    shutil.copy(f'{get_lib_dir()}/{soname}', f'release/bin/linux64/{soname}')
+    shutil.copy(f'{get_lib_dir()}/{lib}', f'release/lib/external/linux64/{lib}')
+
+
+def create_release(deps: Dict[str, Dependency]):
+    mkdir_p('release/bin/linux64')
+    mkdir_p('release/lib/external/linux64')
+    for d in deps:
+        artifacts = deps[d].get_artifacts()
+        for a in artifacts:
+            install_lib(a)
+    # Strip everything
+    for c in glob.glob('release/**/*.so*', recursive=True):
+        subprocess.run(['strip', '-x', c])
+        if verbose:
+            print(f'strip -x {c}')
+    # Create a tarball
+    name = shutil.make_archive('release-linux-x86_64', 'gztar', 'release')
+    print(f'Created {name}')
+
 
 def main():
     deps: Dict[str,Dependency]  = {
@@ -665,6 +716,7 @@ def main():
     parser.add_argument('--quiet', action='store_true', help='Quiet build output')
     parser.add_argument('--verbose', action='store_true', help='Verbose mode')
     parser.add_argument('--clean', action='store_true', help='Cleans the build environment')
+    parser.add_argument('--only-release', action='store_true', help='Only assemble a release from install/')
     args = parser.parse_args()
     
     os.chdir(get_top())
@@ -679,6 +731,10 @@ def main():
     quiet = args.quiet
     global verbose
     verbose = args.verbose
+    
+    if args.only_release:
+        create_release(deps)
+        exit(0)
     
     # Create install dirs
     if not os.path.exists('install'):
