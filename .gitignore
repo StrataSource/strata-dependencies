@@ -5,3 +5,4 @@ lib
 release
 *.tgz
 .vscode
+*.tar.gz
