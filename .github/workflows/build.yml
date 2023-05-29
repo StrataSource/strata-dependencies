@@ -28,5 +28,4 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: strata-deps-linux64
           path: release-linux-x86_64.tar.gz
