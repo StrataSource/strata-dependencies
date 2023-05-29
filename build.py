@@ -568,7 +568,9 @@ class Dep_libdatrie(Dependency):
             ['./autogen.sh'],
             ['./configure', '--enable-shared=no', '--enable-static', f'--prefix={get_install_dir()}'],
             env={
-                'CFLAGS': '-fPIC'
+                # The build setup for datrie is a bit messed up it seems. First time you build it you get an error with VERSION being undefined
+                # but the second pass works. As a workaround we'll just define VERSION here
+                'CFLAGS': '-fPIC -DVERSION=\\"HACK\\"'
             }
         )
     
@@ -719,6 +721,7 @@ def main():
     parser.add_argument('--verbose', action='store_true', help='Verbose mode')
     parser.add_argument('--clean', action='store_true', help='Cleans the build environment')
     parser.add_argument('--only-release', action='store_true', help='Only assemble a release from install/')
+    parser.add_argument('--skip-release', action='store_true', help='Skip assembling of tar.gz')
     args = parser.parse_args()
     
     os.chdir(get_top())
@@ -752,6 +755,7 @@ def main():
             exit(1)
     print('Finished building all dependencies')
 
-    create_release(deps)
+    if not args.skip_release:
+        create_release(deps)
 
 main()
