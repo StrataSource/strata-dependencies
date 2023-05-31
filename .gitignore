@@ -6,3 +6,4 @@ release
 *.tgz
 .vscode
 *.tar.gz
+.ccls-cache
