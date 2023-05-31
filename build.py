@@ -272,6 +272,10 @@ class Dep_bzip2(Dependency):
         return 'bzip2'
 
 
+    def get_artifacts(self) -> list[str]:
+        return ['libbz2.so.1.0']
+
+
     def configure(self) -> bool:
         return True
 
@@ -279,6 +283,9 @@ class Dep_bzip2(Dependency):
     def build(self) -> bool:
         return self._execute_cmds(
             ['make', 'install', f'-j{nproc()}', 'CFLAGS=-fPIC', f'PREFIX={get_install_dir()}'],
+            # Build shared too. Needed for the precompiled libav that we already have. (No install rule for this makefile either)
+            ['make', '-f', 'Makefile-libbz2_so', f'-j{nproc()}', 'CFLAGS=-fPIC', f'PREFIX={get_install_dir()}'],
+            ['cp', 'libbz2.so.1.0', f'{get_lib_dir()}/libbz2.so.1.0'],
             env={'CFLAGS': '-fPIC'}
         )
 
