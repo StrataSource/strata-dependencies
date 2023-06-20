@@ -79,3 +79,15 @@
 [submodule "repos/libdatrie"]
 	path = repos/libdatrie
 	url = https://github.com/tlwg/libdatrie.git
+[submodule "repos/flac"]
+	path = repos/flac
+	url = https://gitlab.xiph.org/xiph/flac.git
+[submodule "repos/opus"]
+	path = repos/opus
+	url = https://gitlab.xiph.org/xiph/opus.git
+[submodule "repos/mpg123"]
+	path = repos/mpg123
+	url = https://github.com/madebr/mpg123.git
+[submodule "repos/libsndfile"]
+	path = repos/libsndfile
+	url = https://github.com/StrataSource/libsndfile.git

@@ -14,7 +14,7 @@ jobs:
         
       - name: Install deps
         run: |
-          sudo apt install python3 gcc g++ autoconf autoconf-archive cmake automake make meson gtk-doc-tools libtool ninja-build xorg-dev texi2html texinfo gperf gettext autopoint chrpath ragel
+          sudo apt install python3 gcc g++ autoconf autoconf-archive cmake automake make meson gtk-doc-tools libtool ninja-build xorg-dev texi2html texinfo gperf gettext autopoint chrpath ragel autogen
           
       - name: Setup Python
         uses: actions/setup-python@v4

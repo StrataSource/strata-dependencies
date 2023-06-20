@@ -55,6 +55,23 @@ def get_global_env() -> dict:
     }
 
 
+def download_and_extract(url: str, type: str, path: str) -> bool:
+    r = subprocess.run(['curl', '-L', '-o', f'download-1.{type}', url])
+    if r.returncode != 0:
+        os.unlink(f'download-1.{type}')
+        return False
+    with WorkDir(f'{get_top()}/repos'):
+        if type == 'tar.gz' or type == 'tar' or type == 'tar.bz2' or type == 'tgz':
+            os.mkdir(path)
+            r = subprocess.run(['tar', '--verbose', '--strip-components=1', '-xf', f'../download-1.{type}', '-C', path])
+        elif type == 'zip':
+            r = subprocess.run(['unzip', f'../download-1.{type}', '-d', path])
+        else:
+            assert False
+    os.unlink(f'download-1.{type}')
+    return r.returncode == 0
+
+
 class WorkDir(AbstractContextManager):
     
     def __init__(self, dir: str) -> None:
@@ -76,6 +93,16 @@ class Dependency:
     """
     Base for all dependencies
     """
+
+    def download(self) -> bool:
+        """
+        Called if the directory returned by get_directory() does not exist
+        
+        Returns
+        -------
+            True if download + extract succeeded
+        """
+        return False
 
     def configure(self) -> bool:
         """
@@ -122,7 +149,13 @@ class Dependency:
         Runs all build steps associated with this dependency
         Applies patches, configures and builds
         """
-        with WorkDir(f'{get_top()}/repos/{self.get_directory()}'):
+        dir = f'{get_top()}/repos/{self.get_directory()}'
+        if not os.path.exists(dir):
+            if not self.download():
+                print('Download failed!')
+                return False
+
+        with WorkDir(dir):
             if not self.apply_patches():
                 print('Failed to apply patches')
                 return False
@@ -648,6 +681,102 @@ class Dep_pango(Dependency):
         return self._execute_cmds(['ninja', '-C', 'build', 'install'])
 
 
+
+class Dep_Xiph(Dependency):
+    """
+    Common base class for all Xiph-maintained dependencies, since they all share the
+    same build facility
+    """
+
+    def __init__(self, dep: str):
+        self.dep = dep
+
+    def get_directory(self) -> str:
+        return self.dep
+
+
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['./autogen.sh'],
+            ['./configure', '--enable-shared=no', '--enable-static', f'--prefix={get_install_dir()}'],
+            env={
+                'CFLAGS': '-fPIC'
+            }
+        )
+
+
+    def build(self) -> bool:
+        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+
+
+class Dep_mpg123(Dependency):
+
+    def get_directory(self) -> str:
+        return 'mpg123'
+
+
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['autoreconf', '-iv'],
+            ['./configure', '--with-optimization=2', '--enable-shared=no', '--enable-static', f'--prefix={get_install_dir()}'],
+            env={
+                'CFLAGS': '-fPIC'
+            }
+        )
+
+
+    def build(self) -> bool:
+        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+
+
+
+class Dep_mp3lame(Dependency):
+
+    def download(self) -> bool:
+        return download_and_extract('https://sourceforge.net/projects/lame/files/lame/3.100/lame-3.100.tar.gz/download', 'tar.gz', 'mp3lame')
+
+    def get_directory(self) -> str:
+        return 'mp3lame'
+
+
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['./configure', '--enable-shared=no', '--enable-static', f'--prefix={get_install_dir()}'],
+            env={
+                'CFLAGS': '-fPIC'
+            }
+        )
+
+
+    def build(self) -> bool:
+        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+
+
+
+class Dep_libsndfile(Dependency):
+
+    def get_directory(self) -> str:
+        return 'libsndfile'
+
+
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['autoreconf', '-iv'],
+            ['./configure', '--enable-shared', '--disable-static', f'--prefix={get_install_dir()}'],
+            # TODO: Can't get it to build with cmake yet, but the library is looking to remove autotools. fix this!
+            #['cmake', '.', '-B', 'build', '-DBUILD_SHARED_LIBS=ON', '-DCMAKE_BUILD_TYPE=Release', '-DBUILD_TESTING=OFF',
+            # '-DCMAKE_SHARED_LINKER_FLAGS=-lmvec', '-DCMAKE_C_FLAGS=-ffast-math', f'-DCMAKE_INSTALL_PREFIX={get_install_dir()}'],
+            env={'CFLAGS': '-fPIC -ffast-math'}
+        )
+
+
+    def build(self) -> bool:
+        # TODO: cmake
+        #return self._execute_cmds(['make', '-C', 'build', 'install', f'-j{nproc()}'])
+        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+
+
+
 def get_soname(lib: str) -> str|None:
     result = subprocess.run(['readelf', '-d', f'{get_lib_dir()}/{lib}'], capture_output=True)
     if result.returncode != 0:
@@ -722,7 +851,14 @@ def main():
         'libthai': Dep_libthai(),
         'cairo': Dep_cairo(),
         'harfbuzz': Dep_harfbuzz(),
-        'pango': Dep_pango()
+        'pango': Dep_pango(),
+        'ogg': Dep_Xiph('ogg'),
+        'flac': Dep_Xiph('flac'),
+        'vorbis': Dep_Xiph('vorbis'),
+        'opus': Dep_Xiph('opus'),
+        'mpg123': Dep_mpg123(),
+        'mp3lame': Dep_mp3lame(),
+        'libsndfile': Dep_libsndfile(),
     }
     
     parser = argparse.ArgumentParser()

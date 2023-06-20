@@ -7,3 +7,4 @@ release
 .vscode
 *.tar.gz
 .ccls-cache
+repos/mp3lame
