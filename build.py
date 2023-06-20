@@ -759,6 +759,10 @@ class Dep_libsndfile(Dependency):
         return 'libsndfile'
 
 
+    def get_artifacts(self) -> list[str]:
+        return ['libsndfile.so']
+
+
     def configure(self) -> bool:
         return self._execute_cmds(
             ['autoreconf', '-iv'],
