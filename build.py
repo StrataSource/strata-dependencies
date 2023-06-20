@@ -526,8 +526,8 @@ class Dep_cairo(Dependency):
 
     def configure(self) -> bool:
         return self._execute_cmds(
-            ['./autogen.sh', '--enable-xlib=no', '--enable-xlib-xrender=no', '--enable-xlib-xcb=no', 
-             '--enable-xcb-shm=no', '--enable-ft', '--enable-egl=no', '--without-x', '--enable-glx=no',
+            ['./autogen.sh', '--enable-xlib=yes', '--enable-xlib-xrender=yes', '--enable-xlib-xcb=yes', 
+             '--enable-xcb-shm=no', '--enable-ft', '--enable-egl=no', '--enable-glx=no',
              '--enable-wgl=no', '--enable-quartz=no', '--enable-svg=yes', '--enable-pdf=yes',
              '--enable-ps=yes', '--enable-gobject=no', '--enable-png', '--disable-static', f'--prefix={get_install_dir()}'],
             env={
