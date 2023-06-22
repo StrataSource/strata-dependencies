@@ -770,7 +770,23 @@ class Dep_libsndfile(Dependency):
             # TODO: Can't get it to build with cmake yet, but the library is looking to remove autotools. fix this!
             #['cmake', '.', '-B', 'build', '-DBUILD_SHARED_LIBS=ON', '-DCMAKE_BUILD_TYPE=Release', '-DBUILD_TESTING=OFF',
             # '-DCMAKE_SHARED_LINKER_FLAGS=-lmvec', '-DCMAKE_C_FLAGS=-ffast-math', f'-DCMAKE_INSTALL_PREFIX={get_install_dir()}'],
-            env={'CFLAGS': '-fPIC -ffast-math'}
+            env={
+                'CFLAGS': f'-fPIC -ffast-math -I{get_inc_dir()}',
+                'LDFLAGS': f'-L{get_lib_dir()}',
+                'LIBS': '-lmp3lame -lm',
+                #'FLAC_CFLAGS': '',
+                #'FLAC_LIBS': '-Wl,-Bstatic -lflac',
+                #'OGG_CFLAGS': '',
+                #'OGG_LIBS': '-Wl,-Bstatic -logg',
+                #'VORBIS_CFLAGS': '',
+                #'VORBIS_LIBS': '-Wl,-Bstatic -lvorbis',
+                #'VORBISENC_CFLAGS': '',
+                #'VORBISENC_LIBS': '-Wl,-Bstatic -lvorbisenc',
+                'OPUS_CFLAGS': f'-I{get_inc_dir()}/include/opus',
+                'OPUS_LIBS': '-Wl,-Bstatic -lopus -Wl,-Bdynamic',
+                'MPG123_CFLAGS': '',
+                'MPG123_LIBS': '-Wl,-Bstatic -lmpg123 -Wl,-Bdynamic'
+            }
         )
 
 
