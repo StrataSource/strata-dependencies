@@ -483,7 +483,8 @@ class Dep_fontconfig(Dependency):
 
     def configure(self) -> bool:
         return self._execute_cmds(
-            ['./autogen.sh', '--enable-static=no', f'--prefix={get_install_dir()}', f'--with-expat={get_install_dir()}'],
+            ['./autogen.sh', '--enable-static=no', f'--prefix={get_install_dir()}', f'--with-expat={get_install_dir()}', '--sysconfdir=/etc', '--disable-docs', 
+                f'--datadir={get_install_dir()}/share', f'--with-baseconfigdir={get_install_dir()}/etc/fonts', '--disable-cache-build'],
             env={
                 'CFLAGS': f'-fPIC -I{get_inc_dir()}',
                 'LDFLAGS': f'-L{get_lib_dir()} -Wl,--no-undefined',
