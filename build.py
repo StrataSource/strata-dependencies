@@ -342,6 +342,30 @@ class Dep_bzip2(Dependency):
 
 
 
+class Dep_curl(Dependency):
+
+    def get_directory(self) -> str:
+        return 'curl'
+
+
+    def get_artifacts(self) -> list[str]:
+        return ['libcurl.a']
+
+
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['cmake', '-Bbuild', '-GNinja', '-DCMAKE_BUILD_TYPE=Release', f'-DCMAKE_INSTALL_PREFIX={get_install_dir()}',
+             '-DBUILD_SHARED_LIBS=OFF', '-DCMAKE_C_FLAGS=-fPIC', '-DCMAKE_CXX_FLAGS=-fPIC']
+        )
+
+
+    def build(self) -> bool:
+        return self._execute_cmds(
+            ['ninja', '-C', 'build', 'install']
+        )
+
+
+
 class Dep_glib(Dependency):
 
     def get_directory(self) -> str:
@@ -710,6 +734,7 @@ class Dep_Xiph(Dependency):
     def __init__(self, dep: str):
         self.dep = dep
 
+
     def get_directory(self) -> str:
         return self.dep
 
@@ -850,7 +875,8 @@ def install_lib(lib: str):
     soname = get_soname(lib)
     if soname is None:
         soname = lib
-    shutil.copy(f'{get_lib_dir()}/{soname}', f'release/bin/linux64/{soname}')
+    if not lib.endswith('.a'):
+        shutil.copy(f'{get_lib_dir()}/{soname}', f'release/bin/linux64/{soname}')
     shutil.copy(f'{get_lib_dir()}/{lib}', f'release/lib/external/linux64/{lib}')
 
 
@@ -877,6 +903,7 @@ def create_release(deps: Dict[str, Dependency]):
 def main():
     deps: Dict[str,Dependency]  = {
         'autoconf': Dep_autoconf(),
+        'curl': Dep_curl(),
         'pcre': Dep_pcre(),
         'zlib': Dep_zlib(),
         'libffi': Dep_libffi(),
