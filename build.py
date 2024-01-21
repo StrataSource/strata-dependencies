@@ -50,8 +50,9 @@ def get_global_env() -> dict:
         'CC': 'gcc',
         'CXX': 'g++',
         'PKG_CONFIG': 'pkg-config --static',
-        'PATH': f'{os.getenv("PATH")}:{get_install_dir()}/bin',
+        'PATH': f'{get_install_dir()}/bin:{os.getenv("PATH")}',
         'PKG_CONFIG_PATH': f'{get_lib_dir()}/pkgconfig',
+        'HOME': f'{os.getenv("HOME")}'
     }
 
 
@@ -240,6 +241,23 @@ class Dependency:
         return True
 
 
+class Dep_autoconf(Dependency):
+
+    def get_directory(self) -> str:
+        return 'autoconf'
+    
+
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['./bootstrap'],
+            ['./configure', f'--prefix={get_install_dir()}']
+        )
+
+
+    def build(self) -> bool:
+        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+
+
 
 class Dep_libffi(Dependency):
 
@@ -251,7 +269,7 @@ class Dep_libffi(Dependency):
         return self._execute_cmds(
             ['./autogen.sh'],
             ['./configure', '--enable-static', '--enable-shared=no', '--enable-tools=no', '--enable-tests=no',
-             '--enable-samples=no', f'--prefix={get_install_dir()}'],
+             '--enable-samples=no', '--disable-docs', f'--prefix={get_install_dir()}'],
              env={'CFLAGS': '-fPIC'}
         )
     
@@ -673,7 +691,7 @@ class Dep_pango(Dependency):
              '--build.pkg-config-path', f'{get_lib_dir()}/pkgconfig'
             ],
             env={
-                'CFLAGS': f'-fPIC -I{get_inc_dir()}/freetype2',
+                'CFLAGS': f'-fPIC -I{get_inc_dir()}/freetype2 -w -Wno-error', # Disable errors...
                 'LDFLAGS': f'-L{get_lib_dir()} -Wl,--no-undefined -L{get_lib_dir()}',
             }
         )
@@ -766,8 +784,12 @@ class Dep_libsndfile(Dependency):
 
     def configure(self) -> bool:
         return self._execute_cmds(
-            ['autoreconf', '-iv'],
-            ['./configure', '--enable-shared', '--disable-static', f'--prefix={get_install_dir()}'],
+            #['autoreconf', '-iv'],
+            ['rm', '-rf', 'build'],
+            ['cmake', '-Bbuild', '-GNinja', '-DCMAKE_BUILD_TYPE=Release', '-DBUILD_TESTING=OFF', 
+             '-DBUILD_SHARED_LIBS=ON', '-DBUILD_PROGRAMS=OFF', '-DBUILD_EXAMPLES=OFF', f'-DCMAKE_INSTALL_PREFIX={get_install_dir()}',
+             '-DENABLE_PACKAGE_CONFIG=OFF'],
+            #['./configure', '--enable-shared', '--disable-static', '--disable-full-suite', f'--prefix={get_install_dir()}'],
             # TODO: Can't get it to build with cmake yet, but the library is looking to remove autotools. fix this!
             #['cmake', '.', '-B', 'build', '-DBUILD_SHARED_LIBS=ON', '-DCMAKE_BUILD_TYPE=Release', '-DBUILD_TESTING=OFF',
             # '-DCMAKE_SHARED_LINKER_FLAGS=-lmvec', '-DCMAKE_C_FLAGS=-ffast-math', f'-DCMAKE_INSTALL_PREFIX={get_install_dir()}'],
@@ -794,7 +816,7 @@ class Dep_libsndfile(Dependency):
     def build(self) -> bool:
         # TODO: cmake
         #return self._execute_cmds(['make', '-C', 'build', 'install', f'-j{nproc()}'])
-        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+        return self._execute_cmds(['ninja', '-C', 'build', 'install'])
 
 
 
@@ -854,6 +876,7 @@ def create_release(deps: Dict[str, Dependency]):
 
 def main():
     deps: Dict[str,Dependency]  = {
+        'autoconf': Dep_autoconf(),
         'pcre': Dep_pcre(),
         'zlib': Dep_zlib(),
         'libffi': Dep_libffi(),
@@ -913,6 +936,7 @@ def main():
         os.mkdir('install')
     
     # Build all requested deps
+    print(args.ONLY)
     for dep in deps:
         if args.ONLY is not None and dep not in args.ONLY:
             continue

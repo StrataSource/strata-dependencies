@@ -91,3 +91,6 @@
 [submodule "repos/libsndfile"]
 	path = repos/libsndfile
 	url = https://github.com/StrataSource/libsndfile.git
+[submodule "repos/autoconf"]
+	path = repos/autoconf
+	url = https://github.com/autotools-mirror/autoconf.git
