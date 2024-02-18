@@ -36,6 +36,10 @@ def get_lib_dir() -> str:
     return f'{get_install_dir()}/lib'
 
 
+def get_pkgconf_dir() -> str:
+    return f'{get_lib_dir()}/pkgconfig'
+
+
 def get_global_subs() -> dict:
     return {
         'INSTALLDIR': f'{get_install_dir()}',
@@ -71,6 +75,36 @@ def download_and_extract(url: str, type: str, path: str) -> bool:
             assert False
     os.unlink(f'download-1.{type}')
     return r.returncode == 0
+
+
+def add_pc_lib(pc: str, libs: list[str]) -> bool:
+    """
+    Hack to add libs to a .pc pkg config file
+
+    Parameters
+    ----------
+    pc: str
+        Path to the pkg config file
+    libs: list[str]
+        Libs to add, including the -l part. These are just flags
+
+    Returns
+    -------
+        True if ok
+    """
+    subst = ' '.join(libs)
+    l = []
+    with open(pc, 'r') as fp:
+        l = fp.readlines()
+
+    for i in range(0,len(l)):
+        if l[i].startswith('Libs:') and not l[i].endswith(subst):
+            l[i] = f'{l[i].strip()} {subst}\n'
+
+    # Write it out
+    with open(pc, 'w') as fp:
+        fp.writelines(l)
+    return True
 
 
 class WorkDir(AbstractContextManager):
@@ -134,6 +168,14 @@ class Dependency:
         For release artifacts, the SONAME property of the specified library is read and used. So, you may
         specify libcairo.so, but libcairo.so.2 will end up in bin/linux64.
         For the engine repo zip (which is for lib/external/linux64), the files returned from this method are used directly
+        """
+        return []
+
+
+    def get_headers(self) -> list[str]:
+        """
+        Returns a list of directories that contain headers that should be installed
+        These will be copied into release/include
         """
         return []
 
@@ -236,7 +278,7 @@ class Dependency:
                 e.update(kwargs['env'])
             if verbose:
                 print(f'args={a}, env={e}')
-            if subprocess.run(a, shell=False, env=e, capture_output=quiet).returncode != 0:
+            if subprocess.run(a, shell=kwargs['shell'] if 'shell' in kwargs else False, env=e, capture_output=quiet).returncode != 0:
                 return False
         return True
 
@@ -246,13 +288,11 @@ class Dep_autoconf(Dependency):
     def get_directory(self) -> str:
         return 'autoconf'
     
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./bootstrap'],
             ['./configure', f'--prefix={get_install_dir()}']
         )
-
 
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -264,7 +304,6 @@ class Dep_libffi(Dependency):
     def get_directory(self) -> str:
         return 'libffi'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./autogen.sh'],
@@ -272,7 +311,6 @@ class Dep_libffi(Dependency):
              '--enable-samples=no', '--disable-docs', f'--prefix={get_install_dir()}'],
              env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -284,13 +322,11 @@ class Dep_zlib(Dependency):
     def get_directory(self) -> str:
         return 'zlib'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./configure', '--static', '--64', f'--prefix={get_install_dir()}'],
             env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -302,7 +338,6 @@ class Dep_pcre(Dependency):
     def get_directory(self) -> str:
         return 'pcre'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./autogen.sh'],
@@ -310,7 +345,6 @@ class Dep_pcre(Dependency):
              '--enable-utf', '--enable-pcre16', '--enable-pcre32'],
             env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -322,15 +356,12 @@ class Dep_bzip2(Dependency):
     def get_directory(self) -> str:
         return 'bzip2'
 
-
     def get_artifacts(self) -> list[str]:
         return ['libbz2.so.1.0']
-
 
     def configure(self) -> bool:
         return True
 
-    
     def build(self) -> bool:
         return self._execute_cmds(
             ['make', 'install', f'-j{nproc()}', 'CFLAGS=-fPIC', f'PREFIX={get_install_dir()}'],
@@ -347,17 +378,14 @@ class Dep_curl(Dependency):
     def get_directory(self) -> str:
         return 'curl'
 
-
     def get_artifacts(self) -> list[str]:
         return ['libcurl.a']
-
 
     def configure(self) -> bool:
         return self._execute_cmds(
             ['cmake', '-Bbuild', '-GNinja', '-DCMAKE_BUILD_TYPE=Release', f'-DCMAKE_INSTALL_PREFIX={get_install_dir()}',
              '-DBUILD_SHARED_LIBS=OFF', '-DCMAKE_C_FLAGS=-fPIC', '-DCMAKE_CXX_FLAGS=-fPIC']
         )
-
 
     def build(self) -> bool:
         return self._execute_cmds(
@@ -371,14 +399,12 @@ class Dep_glib(Dependency):
     def get_directory(self) -> str:
         return 'glib'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['meson', 'build', '--buildtype', 'release', '--default-library', 'static', '--prefix', 
              get_install_dir(), '--libdir', get_lib_dir()],
             env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         if not self._execute_cmds(['ninja', '-C', 'build', 'install']):
@@ -393,14 +419,12 @@ class Dep_pixman(Dependency):
     def get_directory(self) -> str:
         return 'pixman'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./autogen.sh', '--enable-gtk=no', '--enable-png=no', '--enable-shared=no', '--enable-static',
              f'--prefix={get_install_dir()}'],
             env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -411,14 +435,12 @@ class Dep_brotli(Dependency):
     def get_directory(self) -> str:
         return 'brotli'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./bootstrap'],
             ['./configure', '--enable-static', '--disable-shared', f'--prefix={get_install_dir()}'],
             env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -430,13 +452,11 @@ class Dep_libpng(Dependency):
     def get_directory(self) -> str:
         return 'libpng'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./configure', '--enable-static', '--disable-shared', f'--prefix={get_install_dir()}'],
             env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         if not self._execute_cmds(['make', 'install', f'-j{nproc()}']):
@@ -453,10 +473,8 @@ class Dep_freetype(Dependency):
     def get_directory(self) -> str:
         return 'freetype'
 
-
     def get_artifacts(self) -> list[str]:
         return ['libfreetype.so']
-
 
     def configure(self) -> bool:
         return self._execute_cmds(
@@ -473,7 +491,6 @@ class Dep_freetype(Dependency):
             }
         )
     
-    
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
 
@@ -483,13 +500,11 @@ class Dep_jsonc(Dependency):
     def get_directory(self) -> str:
         return 'json-c'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['cmake', '.', '-B', 'build', '-DCMAKE_BUILD_TYPE=Release', '-DBUILD_STATIC_LIBS=ON', '-DBUILD_SHARED_LIBS=OFF', f'-DCMAKE_INSTALL_PREFIX={get_install_dir()}', '-DDISABLE_EXTRA_LIBS=ON'],
             env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         return self._execute_cmds(['make', '-C', 'build', 'install', f'-j{nproc()}'])
@@ -500,14 +515,12 @@ class Dep_expat(Dependency):
     def get_directory(self) -> str:
         return 'libexpat/expat'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./buildconf.sh'],
             ['./configure', '--without-docbook', '--without-examples', '--without-tests', '--enable-static', '--enable-shared=no', f'--prefix={get_install_dir()}'],
             env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -518,15 +531,13 @@ class Dep_fontconfig(Dependency):
     def get_directory(self) -> str:
         return 'fontconfig'
 
-
     def get_artifacts(self) -> list[str]:
         return ['libfontconfig.so']
-
 
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./autogen.sh', '--enable-static=no', f'--prefix={get_install_dir()}', f'--with-expat={get_install_dir()}', '--sysconfdir=/etc', '--disable-docs', 
-                f'--datadir={get_install_dir()}/share', '--disable-cache-build'],
+                f'--datadir={get_install_dir()}/share', '--disable-cache-build',],
             env={
                 'CFLAGS': f'-fPIC -I{get_inc_dir()}',
                 'LDFLAGS': f'-L{get_lib_dir()} -Wl,--no-undefined',
@@ -539,16 +550,19 @@ class Dep_fontconfig(Dependency):
             }
         )
     
-    
     def apply_patches(self) -> bool:
         return self._apply_patches([
             'patches/fontconfig/002-add-face-sub.patch',
             'patches/fontconfig/fontpattern.diff'
         ])
     
-    
     def build(self) -> bool:
-        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+        return all([
+            # build only!
+            self._execute_cmds(['make', f'-j{nproc()}', 'install-exec']),
+            # Manually copy the fontconfig headers and libs... can't use make install because that tries to put stuff in /etc!
+            #self._execute_cmds([f'cp -vf libfontconfig.so* "{get_lib_dir()}/lib"'])
+        ])
 
 
 # Needed for fribidi
@@ -557,13 +571,11 @@ class Dep_c2man(Dependency):
     def get_directory(self) -> str:
         return 'c2man'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./Configure', '-s', '-d', '-e'],
             env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         if not self._execute_cmds(['make', f'-j{nproc()}']):
@@ -578,13 +590,11 @@ class Dep_fribidi(Dependency):
     def get_directory(self) -> str:
         return 'fribidi'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./autogen.sh', f'--prefix={get_install_dir()}', '--enable-shared=no', '--enable-static'],
             env={'CFLAGS': '-fPIC'}
         )
-    
     
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -595,10 +605,8 @@ class Dep_cairo(Dependency):
     def get_directory(self) -> str:
         return 'cairo'
     
-    
     def get_artifacts(self) -> list[str]:
         return ['libcairo.so']
-
 
     def configure(self) -> bool:
         return self._execute_cmds(
@@ -617,7 +625,6 @@ class Dep_cairo(Dependency):
             }
         )
     
-    
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
 
@@ -626,7 +633,6 @@ class Dep_harfbuzz(Dependency):
 
     def get_directory(self) -> str:
         return 'harfbuzz'
-
 
     def configure(self) -> bool:
         return self._execute_cmds(
@@ -638,7 +644,6 @@ class Dep_harfbuzz(Dependency):
             }
         )
 
-    
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
 
@@ -647,7 +652,6 @@ class Dep_libdatrie(Dependency):
 
     def get_directory(self) -> str:
         return 'libdatrie'
-
 
     def configure(self) -> bool:
         return self._execute_cmds(
@@ -660,7 +664,6 @@ class Dep_libdatrie(Dependency):
             }
         )
     
-    
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
 
@@ -671,7 +674,6 @@ class Dep_libthai(Dependency):
     def get_directory(self) -> str:
         return 'libthai'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./autogen.sh'],
@@ -680,7 +682,6 @@ class Dep_libthai(Dependency):
                 'CFLAGS': '-fPIC'
             }
         )
-    
     
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -692,7 +693,6 @@ class Dep_pango(Dependency):
     def get_directory(self) -> str:
         return 'pango'
     
-    
     def get_artifacts(self) -> list[str]:
         return [
             'libpango-1.0.so',
@@ -700,13 +700,11 @@ class Dep_pango(Dependency):
             'libpangoft2-1.0.so'
         ]
     
-    
     def apply_patches(self) -> bool:
         return self._apply_patches([
             'patches/pango/001-add-face-sub.patch',
             'patches/pango/meson-cairo.patch'
         ])
-    
     
     def configure(self) -> bool:
         return self._execute_cmds(
@@ -734,10 +732,8 @@ class Dep_Xiph(Dependency):
     def __init__(self, dep: str):
         self.dep = dep
 
-
     def get_directory(self) -> str:
         return self.dep
-
 
     def configure(self) -> bool:
         return self._execute_cmds(
@@ -748,16 +744,28 @@ class Dep_Xiph(Dependency):
             }
         )
 
-
     def build(self) -> bool:
-        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+        if not self._execute_cmds(['make', 'install', f'-j{nproc()}']):
+            return False
+        
+        match self.dep:
+            case 'ogg':
+                return add_pc_lib(f'{get_pkgconf_dir()}/ogg.pc', ['-lm'])
+            case 'vorbis':
+                return all([
+                    add_pc_lib(f'{get_pkgconf_dir()}/vorbis.pc', ['-logg', '-lm']),
+                    add_pc_lib(f'{get_pkgconf_dir()}/vorbisenc.pc', ['-lvorbis', '-logg', '-lm']),
+                    add_pc_lib(f'{get_pkgconf_dir()}/vorbisfile.pc', ['-lvorbis', '-logg', '-lm']),
+                ])
+            case 'opus':
+                return add_pc_lib(f'{get_pkgconf_dir()}/opus.pc', ['-lm'])
+        return True
 
 
 class Dep_mpg123(Dependency):
 
     def get_directory(self) -> str:
         return 'mpg123'
-
 
     def configure(self) -> bool:
         return self._execute_cmds(
@@ -767,7 +775,6 @@ class Dep_mpg123(Dependency):
                 'CFLAGS': '-fPIC'
             }
         )
-
 
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -782,7 +789,6 @@ class Dep_mp3lame(Dependency):
     def get_directory(self) -> str:
         return 'mp3lame'
 
-
     def configure(self) -> bool:
         return self._execute_cmds(
             ['./configure', '--enable-shared=no', '--enable-static', f'--prefix={get_install_dir()}'],
@@ -790,7 +796,6 @@ class Dep_mp3lame(Dependency):
                 'CFLAGS': '-fPIC'
             }
         )
-
 
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
@@ -802,10 +807,8 @@ class Dep_libsndfile(Dependency):
     def get_directory(self) -> str:
         return 'libsndfile'
 
-
     def get_artifacts(self) -> list[str]:
         return ['libsndfile.so']
-
 
     def configure(self) -> bool:
         return self._execute_cmds(
@@ -837,12 +840,49 @@ class Dep_libsndfile(Dependency):
             }
         )
 
-
     def build(self) -> bool:
         # TODO: cmake
         #return self._execute_cmds(['make', '-C', 'build', 'install', f'-j{nproc()}'])
         return self._execute_cmds(['ninja', '-C', 'build', 'install'])
 
+
+
+class Dep_ffmpeg(Dependency):
+
+    def get_directory(self) -> str:
+        return 'ffmpeg'
+    
+    def get_artifacts(self) -> list[str]:
+        return [
+            'libavcodec.a',
+            'libavformat.a',
+            #'libavdevice.a', # Probably don't need this
+            'libavfilter.a',
+            'libavutil.a',
+            'libswscale.a',
+            'libswresample.a'
+        ]
+    
+    def get_headers(self) -> list[str]:
+        return [
+            'libavcodec',
+            'libavformat',
+            'libavdevice',
+            'libavfilter',
+            'libavutil',
+            'libswresample',
+            'libswscale'
+        ]
+    
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['./configure', '--disable-avx', '--disable-avx2', '--disable-sse42', '--disable-sse4',
+             f'--prefix={get_install_dir()}', '--enable-libvorbis', '--enable-libopus', '--disable-programs',
+             '--disable-doc']
+        )
+
+    def build(self) -> bool:
+        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
 
 
 def get_soname(lib: str) -> str|None:
@@ -880,13 +920,25 @@ def install_lib(lib: str):
     shutil.copy(f'{get_lib_dir()}/{lib}', f'release/lib/external/linux64/{lib}')
 
 
+def install_headers(dir: str, dst: str):
+    shutil.copytree(f'{get_inc_dir()}/{dir}', f'{dst}/{dir}', dirs_exist_ok=True)
+
+
 def create_release(deps: Dict[str, Dependency]):
     mkdir_p('release/bin/linux64')
     mkdir_p('release/lib/external/linux64')
+    mkdir_p('release/include')
+
     for d in deps:
+        # Install binary artifacts
         artifacts = deps[d].get_artifacts()
         for a in artifacts:
             install_lib(a)
+        # Install headers
+        headers = deps[d].get_headers()
+        for h in headers:
+            install_headers(h, 'release/include')
+
     # Strip everything
     for c in glob.glob('release/**/*.so*', recursive=True):
         subprocess.run(['strip', '-x', c])
@@ -930,17 +982,19 @@ def main():
         'mpg123': Dep_mpg123(),
         'mp3lame': Dep_mp3lame(),
         'libsndfile': Dep_libsndfile(),
+        'ffmpeg': Dep_ffmpeg(),
     }
-    
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--only', dest='ONLY', nargs='*', choices=deps.keys(), help='Only build the specified deps')
+    parser.add_argument('--only', dest='ONLY', nargs='+', choices=deps.keys(), help='Only build the specified deps')
     parser.add_argument('--quiet', action='store_true', help='Quiet build output')
     parser.add_argument('--verbose', action='store_true', help='Verbose mode')
     parser.add_argument('--clean', action='store_true', help='Cleans the build environment')
-    parser.add_argument('--only-release', action='store_true', help='Only assemble a release from install/')
-    parser.add_argument('--skip-release', action='store_true', help='Skip assembling of tar.gz')
+    parser.add_argument('--only-release', action='store_true', dest='only_release', help='Only assemble a release from install/')
+    parser.add_argument('--skip-release', action='store_true', dest='skip_release', help='Skip assembling of tar.gz')
     args = parser.parse_args()
-    
+
+
     os.chdir(get_top())
     
     # Clean if requested
@@ -976,4 +1030,5 @@ def main():
     if not args.skip_release:
         create_release(deps)
 
-main()
+if __name__ == '__main__':
+    main()
