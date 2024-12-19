@@ -885,7 +885,39 @@ class Dep_ffmpeg(Dependency):
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
 
 
+class Dep_icu(Dependency):
+
+    def __init__(self, version: str):
+        self.version = version
+
+    def get_directory(self) -> str:
+        return 'icu'
+    
+    def get_artifacts(self):
+        artifacts = []
+        bins = ['libicudata', 'libicui18n', 'libicuio', 'libicutu', 'libicuuc']
+        artifacts += [f'{b}.so.{self.version}' for b in bins]
+        artifacts += [f'{b}.so.{self.version.split(".")[0]}' for b in bins]
+        return artifacts
+
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['./icu4c/source/configure', f'--prefix={get_install_dir()}'],
+            env={
+                # The build setup for datrie is a bit messed up it seems. First time you build it you get an error with VERSION being undefined
+                # but the second pass works. As a workaround we'll just define VERSION here
+                #'CFLAGS': '-fPIC -DVERSION=\\"HACK\\"'
+            }
+        )
+    
+    def build(self) -> bool:
+        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+
+
 def get_soname(lib: str) -> str|None:
+    """
+    Returns the SONAME attribute of the ELF file, if it exists. Otherwise returns None
+    """
     result = subprocess.run(['readelf', '-d', f'{get_lib_dir()}/{lib}'], capture_output=True)
     if result.returncode != 0:
         return None
@@ -983,6 +1015,7 @@ def main():
         'mp3lame': Dep_mp3lame(),
         'libsndfile': Dep_libsndfile(),
         'ffmpeg': Dep_ffmpeg(),
+        'icu': Dep_icu('67.1'),
     }
 
     parser = argparse.ArgumentParser()
