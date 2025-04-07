@@ -100,3 +100,9 @@
 [submodule "repos/icu"]
 	path = repos/icu
 	url = git@github.com:unicode-org/icu.git
+[submodule "repos/pcre2"]
+	path = repos/pcre2
+	url = https://github.com/PCRE2Project/pcre2.git
+[submodule "repos/librsvg"]
+	path = repos/librsvg
+	url = https://github.com/GNOME/librsvg.git

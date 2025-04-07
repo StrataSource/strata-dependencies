@@ -349,6 +349,21 @@ class Dep_pcre(Dependency):
     def build(self) -> bool:
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
 
+class Dep_pcre2(Dependency):
+
+    def get_directory(self) -> str:
+        return 'pcre2'
+
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['./autogen.sh'],
+            ['./configure', '--enable-static', '--enable-shared=no', f'--prefix={get_install_dir()}',
+             '--enable-utf', '--enable-pcre2-16', '--enable-pcre2-32'],
+            env={'CFLAGS': '-fPIC'}
+        )
+    
+    def build(self) -> bool:
+        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
 
 
 class Dep_bzip2(Dependency):
@@ -421,13 +436,16 @@ class Dep_pixman(Dependency):
 
     def configure(self) -> bool:
         return self._execute_cmds(
-            ['./autogen.sh', '--enable-gtk=no', '--enable-png=no', '--enable-shared=no', '--enable-static',
+            ['meson', 'setup', 'build', '-Dgtk=disabled', '-Dlibpng=disabled', '-Dtests=disabled',
+             '--prefix', get_install_dir(), '--buildtype', 'release',
+             '--libdir', 'lib', '--pkg-config-path', f'{get_lib_dir()}/pkgconfig',
+             '--build.pkg-config-path', f'{get_lib_dir()}/pkgconfig', '-Ddefault_library=static',
              f'--prefix={get_install_dir()}'],
             env={'CFLAGS': '-fPIC'}
         )
     
     def build(self) -> bool:
-        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+        return self._execute_cmds(['ninja', '-C', 'build', 'install', f'-j{nproc()}'])
 
 
 class Dep_brotli(Dependency):
@@ -551,17 +569,16 @@ class Dep_fontconfig(Dependency):
         )
     
     def apply_patches(self) -> bool:
-        return self._apply_patches([
-            'patches/fontconfig/002-add-face-sub.patch',
-            'patches/fontconfig/fontpattern.diff'
-        ])
+        return True
+        #return self._apply_patches([
+        #    'patches/fontconfig/002-add-face-sub.patch',
+        #    'patches/fontconfig/001-fontpattern.diff'
+        #])
     
     def build(self) -> bool:
         return all([
             # build only!
             self._execute_cmds(['make', f'-j{nproc()}', 'install-exec']),
-            # Manually copy the fontconfig headers and libs... can't use make install because that tries to put stuff in /etc!
-            #self._execute_cmds([f'cp -vf libfontconfig.so* "{get_lib_dir()}/lib"'])
         ])
 
 
@@ -592,12 +609,13 @@ class Dep_fribidi(Dependency):
 
     def configure(self) -> bool:
         return self._execute_cmds(
-            ['./autogen.sh', f'--prefix={get_install_dir()}', '--enable-shared=no', '--enable-static'],
+            ['meson', 'setup', 'build', '-Ddefault_library=static', f'--prefix={get_install_dir()}',
+             '-Dtests=false', '-Ddocs=false', '--buildtype', 'release', '--libdir=lib'],
             env={'CFLAGS': '-fPIC'}
         )
     
     def build(self) -> bool:
-        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+        return self._execute_cmds(['ninja', '-C', 'build', 'install'])
 
 
 class Dep_cairo(Dependency):
@@ -610,10 +628,10 @@ class Dep_cairo(Dependency):
 
     def configure(self) -> bool:
         return self._execute_cmds(
-            ['./autogen.sh', '--enable-xlib=yes', '--enable-xlib-xrender=yes', '--enable-xlib-xcb=yes', 
-             '--enable-xcb-shm=no', '--enable-ft', '--enable-egl=no', '--enable-glx=no',
-             '--enable-wgl=no', '--enable-quartz=no', '--enable-svg=yes', '--enable-pdf=yes',
-             '--enable-ps=yes', '--enable-gobject=no', '--enable-png', '--disable-static', f'--prefix={get_install_dir()}'],
+            ['meson', 'setup', 'build', '-Dxlib=enabled', '-Dxlib-xcb=enabled', '-Dtests=disabled',
+             '-Dquartz=disabled', '-Dgtk_doc=false', '-Dfreetype=enabled', '-Dfontconfig=enabled',
+             f'--prefix={get_install_dir()}', '--buildtype', 'release',
+             '--libdir=lib'],
             env={
                 'CFLAGS': '-fPIC',
                 'LDFLAGS': f'-L{get_lib_dir()} -Wl,--no-undefined',
@@ -626,7 +644,7 @@ class Dep_cairo(Dependency):
         )
     
     def build(self) -> bool:
-        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+        return self._execute_cmds(['ninja', '-C', 'build', 'install'])
 
 
 class Dep_harfbuzz(Dependency):
@@ -636,7 +654,8 @@ class Dep_harfbuzz(Dependency):
 
     def configure(self) -> bool:
         return self._execute_cmds(
-            ['./autogen.sh', f'--prefix={get_install_dir()}', '--enable-shared=no', '--enable-static'],
+            ['meson', 'setup', 'build', f'--prefix={get_install_dir()}', '-Ddefault_library=static', '-Dtests=disabled', '--buildtype', 'release',
+             '--libdir=lib'],
             env={
                 'CFLAGS': f'-fPIC',
                 'LDFLAGS': f'-L{get_lib_dir()} -L{get_lib_dir()}',
@@ -645,7 +664,7 @@ class Dep_harfbuzz(Dependency):
         )
 
     def build(self) -> bool:
-        return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
+        return self._execute_cmds(['ninja', '-C', 'build', 'install'])
 
 
 class Dep_libdatrie(Dependency):
@@ -700,17 +719,11 @@ class Dep_pango(Dependency):
             'libpangoft2-1.0.so'
         ]
     
-    def apply_patches(self) -> bool:
-        return self._apply_patches([
-            'patches/pango/001-add-face-sub.patch',
-            'patches/pango/meson-cairo.patch'
-        ])
-    
     def configure(self) -> bool:
         return self._execute_cmds(
-            ['meson', 'build', '--prefix', get_install_dir(), '--buildtype', 'release',
+            ['meson', 'setup', 'build', '--prefix', get_install_dir(), '--buildtype', 'release',
              '--libdir', 'lib', '--pkg-config-path', f'{get_lib_dir()}/pkgconfig',
-             '--build.pkg-config-path', f'{get_lib_dir()}/pkgconfig'
+             '--build.pkg-config-path', f'{get_lib_dir()}/pkgconfig', '--buildtype', 'release',
             ],
             env={
                 'CFLAGS': f'-fPIC -I{get_inc_dir()}/freetype2 -w -Wno-error', # Disable errors...
@@ -721,6 +734,31 @@ class Dep_pango(Dependency):
     def build(self) -> bool:
         return self._execute_cmds(['ninja', '-C', 'build', 'install'])
 
+
+class Dep_librsvg(Dependency):
+    
+    def get_directory(self) -> str:
+        return 'librsvg'
+    
+    def get_artifacts(self) -> list[str]:
+        return [
+            'librsvg_2.a'
+        ]
+    
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['meson', 'setup', 'build', '--prefix', get_install_dir(), '--buildtype', 'release',
+             '--libdir', 'lib', '--pkg-config-path', f'{get_lib_dir()}/pkgconfig',
+             '--build.pkg-config-path', f'{get_lib_dir()}/pkgconfig',
+            ],
+            env={
+                'CFLAGS': f'-fPIC', # Disable errors...
+                'LDFLAGS': f'-L{get_lib_dir()} -Wl,--no-undefined -L{get_lib_dir()}',
+            }
+        )
+    
+    def build(self) -> bool:
+        return self._execute_cmds(['ninja', '-C', 'build', 'install'])
 
 
 class Dep_Xiph(Dependency):
@@ -927,7 +965,7 @@ def get_soname(lib: str) -> str|None:
         return matches.group(1)
     except:
         return None
-    
+
     
 def mkdir_p(path: str) -> bool:
     comps = path.split('/')
@@ -989,6 +1027,7 @@ def main():
         'autoconf': Dep_autoconf(),
         'curl': Dep_curl(),
         'pcre': Dep_pcre(),
+        'pcre2': Dep_pcre2(),
         'zlib': Dep_zlib(),
         'libffi': Dep_libffi(),
         'bzip2': Dep_bzip2(),
@@ -1000,7 +1039,6 @@ def main():
         'json-c': Dep_jsonc(),
         'libexpat': Dep_expat(),
         'fontconfig': Dep_fontconfig(),
-        'c2man': Dep_c2man(),
         'fribidi': Dep_fribidi(),
         'libdatrie': Dep_libdatrie(),
         'libthai': Dep_libthai(),
@@ -1016,6 +1054,7 @@ def main():
         'libsndfile': Dep_libsndfile(),
         'ffmpeg': Dep_ffmpeg(),
         'icu': Dep_icu('67.1'),
+        'librsvg': Dep_librsvg(),
     }
 
     parser = argparse.ArgumentParser()
@@ -1056,7 +1095,7 @@ def main():
             continue
         print(f'Building {dep}')
         if not deps[dep].execute():
-            print('Build failed')
+            print(f'Build failed for {dep}')
             exit(1)
     print('Finished building all dependencies')
 
