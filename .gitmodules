@@ -106,3 +106,9 @@
 [submodule "repos/librsvg"]
 	path = repos/librsvg
 	url = https://github.com/GNOME/librsvg.git
+[submodule "repos/gdk-pixbuf"]
+	path = repos/gdk-pixbuf
+	url = https://gitlab.gnome.org/GNOME/gdk-pixbuf.git
+[submodule "repos/zstd"]
+	path = repos/zstd
+	url = https://github.com/facebook/zstd.git

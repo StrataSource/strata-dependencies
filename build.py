@@ -749,7 +749,7 @@ class Dep_librsvg(Dependency):
         return self._execute_cmds(
             ['meson', 'setup', 'build', '--prefix', get_install_dir(), '--buildtype', 'release',
              '--libdir', 'lib', '--pkg-config-path', f'{get_lib_dir()}/pkgconfig',
-             '--build.pkg-config-path', f'{get_lib_dir()}/pkgconfig',
+             '--build.pkg-config-path', f'{get_lib_dir()}/pkgconfig', '-Dpixbuf-loader=disabled'
             ],
             env={
                 'CFLAGS': f'-fPIC', # Disable errors...
@@ -760,6 +760,54 @@ class Dep_librsvg(Dependency):
     def build(self) -> bool:
         return self._execute_cmds(['ninja', '-C', 'build', 'install'])
 
+
+class Dep_gdk_pixbuf(Dependency):
+    
+    def get_directory(self) -> str:
+        return 'gdk-pixbuf'
+    
+    def get_artifacts(self) -> list[str]:
+        return [
+        ]
+    
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['meson', 'setup', 'build', '--prefix', get_install_dir(), '--buildtype', 'release',
+             '--libdir', 'lib', '--pkg-config-path', f'{get_lib_dir()}/pkgconfig',
+             '--build.pkg-config-path', f'{get_lib_dir()}/pkgconfig', '-Dtests=false',
+             '-Dman=false', '-Ddefault_library=static',
+            ],
+            env={
+                'CFLAGS': f'-fPIC', # Disable errors...
+                'LDFLAGS': f'-L{get_lib_dir()} -Wl,--no-undefined -L{get_lib_dir()} -lpng',
+            }
+        )
+    
+    def build(self) -> bool:
+        return self._execute_cmds(['ninja', '-C', 'build', 'install'])
+
+
+class Dep_zstd(Dependency):
+    
+    def get_directory(self) -> str:
+        return 'zstd'
+    
+    def get_artifacts(self) -> list[str]:
+        return [
+        ]
+    
+    def configure(self) -> bool:
+        return self._execute_cmds(
+            ['cmake', '-Bbuild-cmake', '-Sbuild/cmake', f'-DCMAKE_INSTALL_PREFIX={get_install_dir()}',
+             '-DCMAKE_BUILD_TYPE=Release', '-GNinja', '-DZSTD_BUILD_STATIC=ON', '-DZSTD_BUILD_SHARED=OFF'],
+            env={
+                'CFLAGS': f'-fPIC', # Disable errors...
+                'LDFLAGS': f'-L{get_lib_dir()} -Wl,--no-undefined -L{get_lib_dir()}',
+            }
+        )
+    
+    def build(self) -> bool:
+        return self._execute_cmds(['ninja', '-C', 'build-cmake', 'install'])
 
 class Dep_Xiph(Dependency):
     """
@@ -1054,6 +1102,8 @@ def main():
         'libsndfile': Dep_libsndfile(),
         'ffmpeg': Dep_ffmpeg(),
         'icu': Dep_icu('67.1'),
+        'zstd': Dep_zstd(),
+        'gdk-pixbuf': Dep_gdk_pixbuf(),
         'librsvg': Dep_librsvg(),
     }
 

@@ -4,11 +4,15 @@ RUN apt-get update -y && apt-get install -y txt2man chrpath
 
 #RUN apt-get install -y cargo
 
+# HOME must be set to somewhere we have write access
+RUN mkdir /myhome
+ENV HOME=/myhome
+
 # Hackjob of a rust install. cargo/rust provided by the package manager is way too old, so install it externally.
 RUN curl https://sh.rustup.rs -sSf > install.sh && sh install.sh -y
 
 # And of course we can't just throw it in /usr/local!
-ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/.cargo/bin
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/myhome/.cargo/bin
 
 RUN rustup +stable install && rustup default stable
 
@@ -22,3 +26,6 @@ RUN cd /usr/bin; \
 
 # Finally we can install the single package we need.
 RUN cargo install cargo-c
+
+# Ugh
+RUN chmod -R o+rwx /myhome
