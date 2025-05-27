@@ -1054,7 +1054,7 @@ def main():
         'libsndfile': Dep_libsndfile(),
         'ffmpeg': Dep_ffmpeg(),
         'icu': Dep_icu('67.1'),
-        'librsvg': Dep_librsvg(),
+        #'librsvg': Dep_librsvg(),
     }
 
     parser = argparse.ArgumentParser()
