@@ -570,10 +570,6 @@ class Dep_fontconfig(Dependency):
     
     def apply_patches(self) -> bool:
         return True
-        #return self._apply_patches([
-        #    'patches/fontconfig/002-add-face-sub.patch',
-        #    'patches/fontconfig/001-fontpattern.diff'
-        #])
     
     def build(self) -> bool:
         return all([
