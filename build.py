@@ -835,6 +835,21 @@ class Dep_mp3lame(Dependency):
         return self._execute_cmds(['make', 'install', f'-j{nproc()}'])
 
 
+class Dep_sdl3(Dependency):
+    
+    def get_directory(self):
+        return 'SDL'
+    
+    def configure(self):
+        return self._execute_cmds(
+            ['cmake', '-Bbuild', '-GNinja', '-DCMAKE_BUILD_TYPE=Release', '-DSDL_INSTALL_DOCS=OFF', '-DSDL_INSTALL=ON',
+                '-DSDL_VULKAN=ON', '-DSDL_AVX=OFF', '-DSDL_AVX2=OFF', '-DSDL_AVX512F=OFF', '-DSDL_SHARED=ON', '-DSDL_EXAMPLES=OFF',
+                f'-DCMAKE_INSTALL_PREFIX={get_install_dir()}']
+        )
+    
+    def build(self):
+        return self._execute_cmds(['ninja', '-C', 'build', 'install'])
+
 
 class Dep_libsndfile(Dependency):
 
@@ -1050,6 +1065,7 @@ def main():
         'libsndfile': Dep_libsndfile(),
         'ffmpeg': Dep_ffmpeg(),
         'icu': Dep_icu('67.1'),
+        'sdl3': Dep_sdl3(),
         #'librsvg': Dep_librsvg(),
     }
 
